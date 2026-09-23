@@ -13,6 +13,13 @@ dependabot, …) are muted by default. Clicking a notification opens the comment
 check. The menu bar icon shows an unread count, and its popover lists recent activity
 grouped by PR.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
+    <img src="docs/screenshots/menu-light.png" width="380" alt="The Pullse menu: recent activity grouped by pull request, with unread items marked">
+  </picture>
+</p>
+
 ## Requirements
 
 - macOS 14+
@@ -27,6 +34,7 @@ make install   # build, copy to ~/Applications, launch
 make run       # build and launch from ./build without installing
 make check     # one live fetch: print what the last 24h would have notified about
 make test      # unit tests
+make screenshots  # re-render docs/screenshots from sample data (no GitHub, no real settings)
 ```
 
 The first time it launches, macOS asks to allow notifications. If you miss that prompt,
@@ -35,6 +43,13 @@ from the menu, enter the GitHub organization to watch, and turn on "Launch at lo
 you want it. Pullse does nothing until an organization is set.
 
 ## Settings
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+    <img src="docs/screenshots/settings-light.png" width="460" alt="The Pullse Settings window: organization, check interval, event toggles, filters and app options">
+  </picture>
+</p>
 
 Everything specific to you lives in `~/.config/pullse/settings.json`, outside this
 repository. The app creates the file with defaults on first launch. The Settings window

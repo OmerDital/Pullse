@@ -1,0 +1,146 @@
+import AppKit
+import PullseCore
+import SwiftUI
+
+/// `Pullse --screenshots <dir>`: renders the menu and the Settings window, in light and
+/// dark, to PNGs for the README. The data is made up and the app never talks to GitHub
+/// or touches the real settings and state files in this mode.
+///
+/// Views are drawn from an off-screen window of this process, so no Screen Recording
+/// permission is needed.
+@MainActor
+enum Screenshots {
+    static func render(to directory: URL) {
+        Task {
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                    // A fresh model per picture: closing the menu marks everything read.
+                    try await snapshot(popover(MenuView(model: try sampleModel())), appearance: appearance,
+                                       to: directory.appendingPathComponent("menu-\(suffix).png"))
+                    try await snapshot(popover(SettingsView(model: try sampleModel())), appearance: appearance,
+                                       to: directory.appendingPathComponent("settings-\(suffix).png"))
+                }
+                exit(0)
+            } catch {
+                print("error: \(error.localizedDescription)")
+                exit(1)
+            }
+        }
+    }
+
+    /// Drawn as a rounded panel, the way the menu bar shows the menu.
+    private static func popover<V: View>(_ view: V) -> some View {
+        view
+            .background(Color(nsColor: .windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+            )
+            .padding(1)
+    }
+
+    private static func snapshot<V: View>(
+        _ view: V, appearance: NSAppearance.Name, to url: URL
+    ) async throws {
+        let host = NSHostingView(rootView: view)
+        let window = KeyWindow(
+            contentRect: NSRect(x: -20_000, y: -20_000, width: 400, height: 400),
+            styleMask: [.borderless], backing: .buffered, defer: false
+        )
+        // Swift owns the window; AppKit's default of also releasing it on close would
+        // free it twice.
+        window.isReleasedWhenClosed = false
+        window.appearance = NSAppearance(named: appearance)
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.contentView = host
+        // Controls in a window that isn't key are drawn inactive (switches turn gray),
+        // so make the off-screen window key for the picture.
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        defer { window.close() }
+
+        // Let SwiftUI lay out, size the window to fit, then let it draw at that size.
+        try await Task.sleep(for: .milliseconds(400))
+        window.setContentSize(host.fittingSize)
+        window.makeFirstResponder(nil)  // no focused text field with its text selected
+        try await Task.sleep(for: .milliseconds(400))
+
+        guard let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        host.cacheDisplay(in: host.bounds, to: bitmap)
+        guard let png = bitmap.representation(using: .png, properties: [:]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        try png.write(to: url)
+        print("wrote \(url.path) (\(bitmap.pixelsWide)×\(bitmap.pixelsHigh))")
+    }
+
+    /// An app model backed by throwaway files holding sample settings and history.
+    private static func sampleModel() throws -> AppModel {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pullse-screenshots-\(UUID().uuidString)", isDirectory: true)
+
+        var settings = PullseSettings()
+        settings.org = "acme"
+        settings.mutedRepos = ["sandbox"]
+        let settingsFile = SettingsFile(url: dir.appendingPathComponent("settings.json"))
+        try settingsFile.save(settings)
+
+        let store = StateStore(url: dir.appendingPathComponent("state.json"))
+        var state = PersistedState()
+        state.record(sampleEvents(now: Date()))
+        try store.save(state)
+
+        let model = AppModel(store: store, settings: SettingsModel(
+            file: settingsFile, displayPath: "~/.config/pullse/settings.json"
+        ))
+        model.showAsPolled(openPullRequests: 4, at: Date().addingTimeInterval(-20))
+        return model
+    }
+
+    private static func sampleEvents(now: Date) -> [PREvent] {
+        func ago(_ minutes: Double) -> Date { now.addingTimeInterval(-minutes * 60) }
+        let api = ("acme/api", 412, "Add rate limiting to the public API")
+        let web = ("acme/web", 88, "Dark mode for the dashboard")
+        let docs = ("acme/docs", 31, "Document the webhook retry policy")
+
+        func event(
+            _ id: String, _ kind: PREvent.Kind, _ pr: (String, Int, String), _ author: String?,
+            _ headline: String, _ snippet: String, _ date: Date,
+            negative: Bool = false, unread: Bool = true
+        ) -> PREvent {
+            let url = "https://github.com/\(pr.0)/pull/\(pr.1)"
+            return PREvent(
+                id: id, kind: kind, repo: pr.0, number: pr.1, prTitle: pr.2, prURL: url,
+                author: author, headline: headline, snippet: snippet, url: url, date: date,
+                isNegative: negative, isUnread: unread
+            )
+        }
+
+        return [
+            event("1", .review, api, "alice", "alice requested changes",
+                  "The limiter should key on the API token, not the client IP — proxies will share one bucket.",
+                  ago(2), negative: true),
+            event("2", .comment, api, "bob", "bob commented",
+                  "Can we make the burst size configurable per plan?", ago(9)),
+            event("3", .ci, api, nil, "CI failed: lint, unit-tests +1",
+                  "lint, unit-tests, integration", ago(14), negative: true),
+            event("4", .review, web, "carol", "carol approved",
+                  "Looks great in both themes. Ship it!", ago(48), unread: false),
+            event("5", .mention, docs, "dave", "dave mentioned you",
+                  "@janedoe does the retry schedule here match what the API actually does?",
+                  ago(95), unread: false),
+            event("6", .comment, web, "erin", "erin commented",
+                  "Nit: the toggle label should say Appearance.", ago(180), unread: false),
+        ]
+    }
+}
+
+/// Borderless windows can't become key by default.
+private final class KeyWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+}

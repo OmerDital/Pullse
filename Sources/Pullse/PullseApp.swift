@@ -29,7 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if CommandLine.arguments.contains("--check") {
+        let arguments = CommandLine.arguments
+        if let flag = arguments.firstIndex(of: "--screenshots"), flag + 1 < arguments.count {
+            Screenshots.render(to: URL(fileURLWithPath: arguments[flag + 1]))
+            return
+        }
+        if arguments.contains("--check") {
             Task { await model.check() }
             return
         }

@@ -80,7 +80,7 @@ struct SettingsView: View {
                 Text("App")
             } footer: {
                 HStack(spacing: 4) {
-                    Text("Saved in \((settings.file.url.path as NSString).abbreviatingWithTildeInPath)")
+                    Text("Saved in \(settings.displayPath)")
                     Button("Show in Finder") {
                         NSWorkspace.shared.activateFileViewerSelecting([settings.file.url])
                     }

@@ -13,10 +13,16 @@ final class SettingsModel {
     /// and nothing is written until the file is fixed, so a hand edit is never lost.
     private(set) var error: String?
 
-    @ObservationIgnored let file = SettingsFile()
+    @ObservationIgnored let file: SettingsFile
+    /// The file's location as shown in the Settings window.
+    @ObservationIgnored let displayPath: String
     @ObservationIgnored private var loadedModificationDate: Date?
 
-    init() {
+    /// `displayPath` defaults to the file's real path; screenshots pass the usual one so
+    /// a temporary path never shows up in them.
+    init(file: SettingsFile = SettingsFile(), displayPath: String? = nil) {
+        self.file = file
+        self.displayPath = displayPath ?? (file.url.path as NSString).abbreviatingWithTildeInPath
         current = PullseSettings()
         load()
         // Write the defaults out once so there is a file to find and edit.

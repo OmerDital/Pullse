@@ -13,18 +13,31 @@ final class AppModel {
 
     var unreadCount: Int { history.filter(\.isUnread).count }
 
-    let settings = SettingsModel()
+    let settings: SettingsModel
     @ObservationIgnored let notifier = Notifier()
     @ObservationIgnored private let client = GitHubClient()
-    @ObservationIgnored private let store = StateStore()
+    @ObservationIgnored private let store: StateStore
     @ObservationIgnored private var state: PersistedState
     @ObservationIgnored private var loop: Task<Void, Never>?
     /// A poll was asked for while one was running; run another as soon as it ends.
     @ObservationIgnored private var pollAgain = false
 
-    init() {
+    convenience init() {
+        self.init(store: StateStore(), settings: SettingsModel())
+    }
+
+    init(store: StateStore, settings: SettingsModel) {
+        self.store = store
+        self.settings = settings
         state = store.load()
         history = state.history
+    }
+
+    /// Screenshots only: show a finished poll without talking to GitHub.
+    func showAsPolled(openPullRequests: Int, at date: Date) {
+        self.openPullRequests = openPullRequests
+        lastPoll = date
+        lastError = nil
     }
 
     func start() {

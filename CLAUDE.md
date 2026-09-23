@@ -14,6 +14,7 @@ make run       # build and open build/Pullse.app
 make install   # build, copy to ~/Applications, relaunch
 make check     # build, then one live read-only fetch: prints what the last 24h would notify
 make test      # swift test
+make screenshots  # render docs/screenshots/*.png (menu + settings, light/dark) from sample data
 swift test --filter <testFunctionName>   # a single test (Swift Testing, not XCTest)
 swift build    # debug build; enough to type-check the app target
 ```
@@ -23,7 +24,10 @@ There is no linter configured.
 `.build/debug/Pullse` runs, but notifications and launch-at-login only work from the
 bundled `.app`, so the app has to go through `make build`. `Pullse --check` (the `--check`
 flag on the binary) runs one fetch, prints, and exits without notifying or touching saved
-state.
+state. `Pullse --screenshots <dir>` (`Screenshots.swift`) draws the real views into
+off-screen windows, using sample data and temporary files, so it needs no Screen Recording
+permission. Re-run it after UI changes; the sample data follows the placeholder-names
+rule below.
 
 ## Toolchain quirks (Command Line Tools only, macOS 27 SDK)
 
