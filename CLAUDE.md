@@ -1,0 +1,100 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Pullse is a macOS 14+ menu bar app (SwiftUI, Swift 6 language mode, Swift Package, no
+.xcodeproj). It polls GitHub for activity on the user's open pull requests in one
+organization and posts native notifications.
+
+## Commands
+
+```sh
+make build     # scripts/build-app.sh → build/Pullse.app (release build, bundled, ad-hoc signed)
+make run       # build and open build/Pullse.app
+make install   # build, copy to ~/Applications, relaunch
+make check     # build, then one live read-only fetch: prints what the last 24h would notify
+make test      # swift test
+swift test --filter <testFunctionName>   # a single test (Swift Testing, not XCTest)
+swift build    # debug build; enough to type-check the app target
+```
+
+There is no linter configured.
+
+`.build/debug/Pullse` runs, but notifications and launch-at-login only work from the
+bundled `.app`, so the app has to go through `make build`. `Pullse --check` (the `--check`
+flag on the binary) runs one fetch, prints, and exits without notifying or touching saved
+state.
+
+## Toolchain quirks (Command Line Tools only, macOS 27 SDK)
+
+- **Don't use `@State`.** In this SDK it is a macro whose plugin ships only with Xcode, so
+  it fails to compile here. Views use `private let x = State(initialValue: …)` with
+  `.wrappedValue` / `.projectedValue`. Other SwiftUI property-wrapper macros may break the
+  same way; `@Observable` (Observation) works.
+- `swift test` sometimes fails with "plugin for module 'TestingMacros' not found". Re-run
+  it; it passes on a later attempt with no changes.
+
+## Architecture
+
+Two targets. `PullseCore` has no AppKit or SwiftUI and holds all the logic under test.
+`Pullse` is the thin app on top of it.
+
+**One poll** (`AppModel.fetchAndNotify`):
+1. `SettingsModel.reloadIfChanged()` re-reads `~/.config/pullse/settings.json` when its
+   modification date changes. It stops the poll if there's no org or the file won't parse.
+2. `GitHubClient.snapshot` makes 1–2 GraphQL requests using the token from `gh auth
+   token`. The client looks for `gh` in Homebrew paths first, because GUI apps don't get
+   the shell's PATH. On a 401 it drops the cached token and retries once. Query text is in
+   `Queries.swift`.
+3. `EventDetector.detect(snapshot, state:, settings:, now:)` is pure (no I/O, no clock) and
+   returns the new events plus the next `SeenState`.
+4. `PersistedState.record` adds the events to history. `StateStore` saves it to
+   `~/Library/Application Support/Pullse/state.json`, and `Notifier` posts the
+   notifications. More than 5 events at once become one summary notification.
+
+**What counts as new** is the heart of the app (`EventDetector`). An item notifies only if
+its id is not in the seen set **and** its timestamp is at or after `lastPollAt − 5 min`. The
+time rule is what stops a first launch, a newly opened PR, or an event type being turned
+back on from replaying old history. Items are marked seen even when filters drop them.
+Seen entries older than 24h are pruned. Consequences to keep in mind when changing it:
+- Inline review comments are read through `reviews { comments }`, not `reviewThreads`,
+  because every reply is its own review and reviews come back newest first. They are dated
+  by `publishedAt ?? createdAt`: a draft's `createdAt` is when it was written.
+- An empty-bodied `COMMENTED` review is skipped, because its inline comments are reported
+  one by one.
+- CI checks are keyed `id:outcome:finishedAt`, because a legacy StatusContext keeps its id
+  across fail → pass → fail. Every check that finishes on one PR in one poll becomes one
+  event.
+- Mentions come from a separate search of other people's PRs, and the body must contain
+  `@login` as a whole word. Their seen ids have a `mention:` prefix.
+- The user's own items never notify. Bots (`__typename == "Bot"` or a login ending in
+  `[bot]`) are filtered unless `includeBots` is on.
+
+**Settings.** `~/.config/pullse/settings.json` (`PULLSE_SETTINGS` overrides the path) is
+the only settings store. There are no `UserDefaults` or `@AppStorage`. `PullseSettings` decodes
+leniently: every key is optional. A file that doesn't parse is never overwritten, and saves
+are blocked until it is fixed. `bundleIdentifier` in the same file is read only by
+`scripts/build-app.sh`, which stamps it into the bundle's `Info.plist`. `BUNDLE_ID` in the
+environment overrides it, and with neither the build uses `com.example.pullse`.
+
+**Poll loop.** `AppModel.restartLoop()` cancels and restarts the timer; it is called when
+the interval or org changes. A `poll()` requested while one is running sets `pollAgain`
+instead of being dropped. The fetch runs in an unstructured `Task`, so cancelling the loop
+doesn't abort a request half way.
+
+## Tests
+
+Tests live in `Tests/PullseTests`. They build GraphQL JSON with the helpers in
+`Fixtures.swift` (`pr`, `comment`, `review`, `checkRun`, `snapshot`, `detect`) and decode it
+through the real `GitHubClient.decode`, so they cover the response models as well as the
+rules. The fixture clock is fixed: `lastPoll = t0`, `now = t0 + 60s`, and
+`polled = SeenState(lastPollAt: lastPoll)`. The tests never touch the network.
+
+## Repository rules
+
+- **Nothing user- or org-specific goes in the repo.** That covers org names, usernames,
+  teammates' logins, real repo names and bundle ids. Use placeholders such as `acme`,
+  `your-org`, `alice` and `janedoe` in tests, comments, UI prompts and docs; real values
+  belong in the settings file.
+- **Pullse must stay read-only toward GitHub.** Only GraphQL queries, never mutations.
+  `everyQueryIsReadOnly` in `ModelAndStoreTests.swift` enforces this.

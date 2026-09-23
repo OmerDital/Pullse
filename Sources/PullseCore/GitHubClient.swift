@@ -1,0 +1,163 @@
+import Foundation
+
+public enum GitHubError: LocalizedError, Sendable {
+    case ghNotFound
+    case notLoggedIn(String)
+    case http(Int, String)
+    case graphQL([String])
+    case badResponse(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .ghNotFound:
+            return "The GitHub CLI (gh) was not found. Install it with `brew install gh`."
+        case .notLoggedIn(let detail):
+            return "gh is not logged in — run `gh auth login`. (\(detail))"
+        case .http(let status, let body):
+            return "GitHub returned HTTP \(status): \(body)"
+        case .graphQL(let messages):
+            return "GitHub GraphQL error: \(messages.joined(separator: "; "))"
+        case .badResponse(let detail):
+            return "Unexpected response from GitHub: \(detail)"
+        }
+    }
+}
+
+public struct Snapshot: Sendable {
+    public let login: String
+    public let myPullRequests: [PullRequest]
+    public let mentionedPullRequests: [PullRequest]
+}
+
+/// Talks to the GitHub GraphQL API with the token of the local `gh` login, so the app
+/// needs no credentials of its own.
+public actor GitHubClient {
+    private let session: URLSession
+    private var token: String?
+
+    public init(session: URLSession = .shared) {
+        self.session = session
+    }
+
+    /// Fetch everything one poll needs. `mentionsSince` nil skips the mentions query.
+    public func snapshot(org: String, mentionsSince: Date?) async throws -> Snapshot {
+        let mine: MyPullRequestsData = try await graphQL(
+            Queries.myPullRequests, variables: ["q": Queries.myPullRequestsSearch(org: org)]
+        )
+        var mentioned: [PullRequest] = []
+        if let since = mentionsSince {
+            let data: MentionsData = try await graphQL(
+                Queries.mentions, variables: ["q": Queries.mentionsSearch(org: org, since: since)]
+            )
+            mentioned = data.search.pullRequests
+        }
+        return Snapshot(
+            login: mine.viewer.login,
+            myPullRequests: mine.search.pullRequests,
+            mentionedPullRequests: mentioned
+        )
+    }
+
+    func graphQL<T: Decodable>(_ query: String, variables: [String: String]) async throws -> T {
+        do {
+            return try await send(query, variables: variables, token: try currentToken())
+        } catch GitHubError.http(401, _) {
+            // The gh token was rotated or re-issued since we cached it.
+            token = nil
+            return try await send(query, variables: variables, token: try currentToken())
+        }
+    }
+
+    private func send<T: Decodable>(
+        _ query: String, variables: [String: String], token: String
+    ) async throws -> T {
+        var request = URLRequest(url: URL(string: "https://api.github.com/graphql")!)
+        request.httpMethod = "POST"
+        request.setValue("bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Pullse", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 30
+        request.httpBody = try JSONSerialization.data(
+            withJSONObject: ["query": query, "variables": variables]
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw GitHubError.badResponse("not an HTTP response")
+        }
+        guard http.statusCode == 200 else {
+            let text = String(data: data, encoding: .utf8) ?? ""
+            throw GitHubError.http(http.statusCode, String(text.prefix(300)))
+        }
+        return try Self.decode(data)
+    }
+
+    static func decode<T: Decodable>(_ data: Data) throws -> T {
+        let envelope: GraphQLEnvelope<T>
+        do {
+            envelope = try JSONDecoder.github.decode(GraphQLEnvelope<T>.self, from: data)
+        } catch {
+            throw GitHubError.badResponse(String(describing: error))
+        }
+        // GraphQL can return partial data alongside errors (e.g. one inaccessible repo);
+        // prefer the data when there is any.
+        if let data = envelope.data {
+            return data
+        }
+        throw GitHubError.graphQL(envelope.errors?.map(\.message) ?? ["no data"])
+    }
+
+    private func currentToken() throws -> String {
+        if let token {
+            return token
+        }
+        let fresh = try Self.tokenFromGh()
+        token = fresh
+        return fresh
+    }
+
+    /// `gh auth token`. GUI apps don't inherit the shell's PATH, so look in the usual
+    /// Homebrew locations before falling back to PATH.
+    static func tokenFromGh() throws -> String {
+        let candidates = ["/opt/homebrew/bin/gh", "/usr/local/bin/gh"]
+            + (ProcessInfo.processInfo.environment["PATH"] ?? "")
+                .split(separator: ":").map { "\($0)/gh" }
+        guard let gh = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) })
+        else {
+            throw GitHubError.ghNotFound
+        }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: gh)
+        process.arguments = ["auth", "token", "--hostname", "github.com"]
+        let out = Pipe()
+        let err = Pipe()
+        process.standardOutput = out
+        process.standardError = err
+        try process.run()
+        process.waitUntilExit()
+
+        let token = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard process.terminationStatus == 0, !token.isEmpty else {
+            let detail = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            throw GitHubError.notLoggedIn(detail)
+        }
+        return token
+    }
+}
+
+struct GraphQLEnvelope<T: Decodable>: Decodable {
+    struct Message: Decodable { let message: String }
+    let data: T?
+    let errors: [Message]?
+}
+
+extension JSONDecoder {
+    static let github: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+}
