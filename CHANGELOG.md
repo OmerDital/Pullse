@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-23
+
 ### Added
 - Menu bar app that notifies about new comments, reviews, CI results and @mentions on
   your pull requests in one GitHub organization, each type toggleable.
