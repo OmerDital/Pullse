@@ -54,6 +54,9 @@ struct MenuBarLabel: View {
             if unread > 0 {
                 Text("\(unread)")
             }
+            if model.updater.available != nil {
+                Image(systemName: "arrow.up.circle.fill")
+            }
         }
     }
 }

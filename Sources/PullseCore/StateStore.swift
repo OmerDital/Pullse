@@ -5,6 +5,8 @@ public struct PersistedState: Codable, Sendable {
     public var seen = SeenState()
     /// Most recent events first, capped at `historyLimit`.
     public var history: [PREvent] = []
+    /// The app version that last ran, to say "updated to x.y.z" once after an update.
+    public var lastRunVersion: String?
 
     public static let historyLimit = 100
 

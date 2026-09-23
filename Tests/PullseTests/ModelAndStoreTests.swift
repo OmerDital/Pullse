@@ -174,3 +174,18 @@ private func temporaryStore() -> StateStore {
         #expect(!query.contains("mutation"))
     }
 }
+
+@Test func testItemsAreLabelledAsPullse() throws {
+    let event = PREvent(
+        id: "test-1", kind: .test, repo: "Pullse", number: 0, prTitle: "Test notification",
+        prURL: "pullse:test", author: nil, headline: "Test notification", snippet: "",
+        url: "https://github.com/acme/pullse", date: now
+    )
+    #expect(event.prLabel == "Pullse")
+    // Survives the state file like any other event.
+    var state = PersistedState()
+    state.record([event])
+    let data = try JSONEncoder().encode(state)
+    let decoded = try JSONDecoder().decode(PersistedState.self, from: data)
+    #expect(decoded.history.first?.kind == .test)
+}

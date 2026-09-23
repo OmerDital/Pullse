@@ -19,6 +19,16 @@ struct SettingsView: View {
     private let mutedText = State(initialValue: "")
 
     private var settings: SettingsModel { model.settings }
+    private var updater: Updater { model.updater }
+
+    private var updateStatus: String {
+        if let error = updater.error { return error }
+        if let update = updater.available { return "\(update.version.description) is available" }
+        if let checked = updater.lastChecked {
+            return "Up to date · checked \(checked.formatted(.relative(presentation: .named)))"
+        }
+        return updater.repository == nil ? "This build has no update source" : ""
+    }
 
     var body: some View {
         Form {
@@ -67,13 +77,48 @@ struct SettingsView: View {
             }
 
             Section {
+                LabeledContent("Version", value: "\(updater.version) (build \(updater.build))")
+                Toggle("Check for updates automatically", isOn: settings.binding(\.checkForUpdates))
+                Toggle("Install updates automatically", isOn: settings.binding(\.autoUpdate))
+                Toggle("Include prereleases", isOn: settings.binding(\.includePrereleases))
+                HStack {
+                    Button("Check now") { Task { await updater.check() } }
+                        .disabled(updater.isBusy || updater.repository == nil)
+                    if updater.phase == .checking {
+                        ProgressView().controlSize(.small)
+                    }
+                    Spacer()
+                    Text(updateStatus)
+                        .font(.caption)
+                        .foregroundStyle(updater.error != nil ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                        .multilineTextAlignment(.trailing)
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                if !updater.canInstallInPlace {
+                    Text("Updates install in place only when Pullse is in Applications or ~/Applications. From anywhere else they open the download page.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
                 Toggle("Launch at login", isOn: launchAtLogin.projectedValue)
                     .onChange(of: launchAtLogin.wrappedValue) { _, enabled in setLaunchAtLogin(enabled) }
+                if let problem = model.notificationProblem {
+                    HStack {
+                        Text(problem).font(.caption).foregroundStyle(.orange)
+                        Spacer()
+                        Button("Open Notification Settings") { model.notifier.openSystemSettings() }
+                            .controlSize(.small)
+                    }
+                }
                 if let loginError = loginError.wrappedValue {
                     Text(loginError).font(.caption).foregroundStyle(.red)
                 }
                 HStack {
-                    Button("Send test notification") { model.notifier.sendTest() }
+                    Button("Send test notification") { Task { await model.sendTest() } }
                     Button("Clear history") { model.clearHistory() }
                 }
             } header: {
@@ -94,6 +139,7 @@ struct SettingsView: View {
         .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
         .onAppear {
+            Task { await model.refreshNotificationStatus() }
             settings.reloadIfChanged()
             orgText.wrappedValue = settings.current.org
             mutedText.wrappedValue = settings.current.mutedRepos.joined(separator: ", ")

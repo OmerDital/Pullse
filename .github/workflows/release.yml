@@ -1,0 +1,57 @@
+# Publish a GitHub release when a version tag is pushed (scripts/release.sh creates it).
+# The release carries Pullse-<version>.zip and its .sha256, the two assets the in-app
+# updater looks for, and notes taken from that version's CHANGELOG.md section.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check the tag matches VERSION and CHANGELOG.md
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match VERSION ($version)"
+            exit 1
+          fi
+          scripts/changelog-section.sh "$version" > "$RUNNER_TEMP/notes.md"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: scripts/test.sh
+
+      - name: Build
+        env:
+          BUNDLE_ID: ${{ vars.BUNDLE_ID }}
+        run: make build
+
+      - name: Package
+        run: scripts/package.sh
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          case "$VERSION" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" \
+            "build/Pullse-$VERSION.zip" "build/Pullse-$VERSION.zip.sha256" \
+            --title "Pullse $VERSION" --notes-file "$RUNNER_TEMP/notes.md" \
+            --verify-tag "${flags[@]}"

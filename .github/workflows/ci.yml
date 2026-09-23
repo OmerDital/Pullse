@@ -1,0 +1,51 @@
+# Build and test every pull request and every push to main, and keep the built app as a
+# downloadable artifact. Tags are handled by release.yml, which builds them itself.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# macOS minutes are expensive on private repos: a newer push to the same branch or PR
+# cancels the run it supersedes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test
+        run: scripts/test.sh
+
+      - name: Build
+        env:
+          # A repository variable (Settings → Secrets and variables → Actions → Variables),
+          # so the bundle id stays out of the code. Empty falls back to a placeholder.
+          BUNDLE_ID: ${{ vars.BUNDLE_ID }}
+        run: make build
+
+      - name: Package
+        id: package
+        run: |
+          zip="$(scripts/package.sh "+${GITHUB_RUN_NUMBER}")"
+          echo "name=$(basename "$zip" .zip)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: build/Pullse-*.zip*
+          retention-days: 14
+          if-no-files-found: error

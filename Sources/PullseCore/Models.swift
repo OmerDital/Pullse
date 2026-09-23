@@ -172,6 +172,8 @@ struct MentionsData: Decodable, Sendable {
 public struct PREvent: Codable, Sendable, Identifiable, Hashable {
     public enum Kind: String, Codable, Sendable {
         case comment, review, ci, mention
+        /// Made by "Send test notification"; not from GitHub activity.
+        case test
     }
 
     public let id: String
@@ -212,6 +214,7 @@ public struct PREvent: Codable, Sendable, Identifiable, Hashable {
 
     /// "api#1964"
     public var prLabel: String {
+        if kind == .test { return "Pullse" }
         let name = repo.split(separator: "/").last.map(String.init) ?? repo
         return "\(name)#\(number)"
     }

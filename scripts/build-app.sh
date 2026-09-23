@@ -27,7 +27,27 @@ if [ -z "$BUNDLE_ID" ]; then
 fi
 plutil -replace CFBundleIdentifier -string "$BUNDLE_ID" "$APP/Contents/Info.plist"
 
+# Version from VERSION; build number from CI's run number, else the commit count.
+VERSION="$(tr -d '[:space:]' < VERSION)"
+BUILD="${GITHUB_RUN_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 0)}"
+plutil -replace CFBundleShortVersionString -string "$VERSION" "$APP/Contents/Info.plist"
+plutil -replace CFBundleVersion -string "$BUILD" "$APP/Contents/Info.plist"
+
+# Where the app looks for updates: owner/name of the GitHub repo it was built from. Taken
+# from CI or the origin remote rather than committed; without it, update checks are off.
+REPO="${PULLSE_UPDATE_REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+if [ -z "$REPO" ]; then
+    REPO="$(git remote get-url origin 2>/dev/null \
+        | sed -nE 's#^(https://github\.com/|git@github\.com:)([^/]+/[^/]+)$#\2#p' \
+        | sed 's/\.git$//' || true)"
+fi
+if [ -n "$REPO" ]; then
+    plutil -replace PullseUpdateRepository -string "$REPO" "$APP/Contents/Info.plist"
+else
+    echo "note: no GitHub origin remote, update checks disabled in this build" >&2
+fi
+
 # Ad-hoc signature: enough for notifications and launch-at-login on this Mac.
 codesign --force --sign - --timestamp=none "$APP"
 
-echo "Built $APP ($BUNDLE_ID)"
+echo "Built $APP $VERSION ($BUILD) ($BUNDLE_ID)"

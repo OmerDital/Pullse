@@ -99,6 +99,18 @@ enum Screenshots {
             file: settingsFile, displayPath: "~/.config/pullse/settings.json"
         ))
         model.showAsPolled(openPullRequests: 4, at: Date().addingTimeInterval(-20))
+        let asset = { (id: Int, name: String) in
+            ReleaseAsset(id: id, name: name, url: "https://api.github.com/assets/\(id)", size: 0)
+        }
+        if let version = SemanticVersion("1.4.0") {
+            model.updater.showAvailable(
+                AvailableUpdate(
+                    version: version, archive: asset(1, "Pullse-1.4.0.zip"),
+                    checksum: asset(2, "Pullse-1.4.0.zip.sha256"), notes: "", pageURL: ""
+                ),
+                runningVersion: "1.3.1", build: "57"
+            )
+        }
         return model
     }
 

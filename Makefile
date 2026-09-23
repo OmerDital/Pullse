@@ -1,13 +1,13 @@
 APP := build/Pullse.app
 INSTALLED := $(HOME)/Applications/Pullse.app
 
-.PHONY: build test run check screenshots install uninstall clean
+.PHONY: build test run check screenshots dist release install uninstall clean
 
 build:
 	scripts/build-app.sh
 
 test:
-	swift test
+	scripts/test.sh
 
 run: build
 	open "$(APP)"
@@ -19,6 +19,15 @@ check: build
 # Render the README screenshots from made-up sample data.
 screenshots: build
 	"$(APP)/Contents/MacOS/Pullse" --screenshots "$(CURDIR)/docs/screenshots"
+
+# Zip the app with its SHA-256 for download: build/Pullse-<version>.zip(.sha256).
+dist: build
+	scripts/package.sh
+
+# Cut a release locally (changelog, VERSION, commit, tag); push the tag to publish it.
+release:
+	@test -n "$(VERSION)" || { echo "usage: make release VERSION=x.y.z" >&2; exit 1; }
+	scripts/release.sh "$(VERSION)"
 
 install: build
 	mkdir -p "$(HOME)/Applications"

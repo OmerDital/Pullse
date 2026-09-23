@@ -23,9 +23,43 @@ grouped by PR.
 ## Requirements
 
 - macOS 14+
-- Swift 6 toolchain: Xcode, or just the Command Line Tools (`xcode-select --install`)
 - The [GitHub CLI](https://cli.github.com/), logged in (`gh auth login`). The app uses
   your `gh` token and has no credentials of its own.
+- To build from source: a Swift 6 toolchain (Xcode, or just the Command Line Tools,
+  `xcode-select --install`).
+
+## Download
+
+Every release on the repository's Releases page has `Pullse-<version>.zip`:
+
+1. Unzip it and move `Pullse.app` to `~/Applications` (or `/Applications`).
+2. Open it. Releases are ad-hoc signed rather than notarized, so the first time macOS
+   says it can't check the app. Go to System Settings → Privacy & Security, click
+   **Open Anyway** next to the message about Pullse, and confirm.
+
+That approval is needed only once. Updates Pullse installs itself are downloaded by the
+app, not by a browser, so they don't prompt again.
+
+Every CI run also keeps a build of that commit as a downloadable artifact for 14 days
+(the run's Summary page → Artifacts).
+
+## Updates
+
+Pullse checks the repository's releases on launch and every 6 hours. When a newer one
+exists, the menu bar icon gets an arrow and the menu shows **Pullse x.y.z is available**,
+with *What's new* and *Install*. Install downloads the release, checks it against its
+published SHA-256, checks that it is Pullse at the expected version with an intact
+signature, swaps it in and relaunches. After the relaunch a notification confirms the
+new version.
+
+Turn on **Install updates automatically** in Settings to have that happen without asking.
+Updates install in place only when Pullse lives in `/Applications` or `~/Applications`.
+Anywhere else, Install opens the release page instead. Prereleases are skipped unless
+**Include prereleases** is on.
+
+A build knows where to look because `scripts/build-app.sh` stamps it with the GitHub
+repository it was built from (from CI, or the `origin` remote). A build without one has
+update checks turned off.
 
 ## Build and run
 
@@ -35,6 +69,7 @@ make run       # build and launch from ./build without installing
 make check     # one live fetch: print what the last 24h would have notified about
 make test      # unit tests
 make screenshots  # re-render docs/screenshots from sample data (no GitHub, no real settings)
+make dist      # build, then zip it as build/Pullse-<version>.zip with a .sha256
 ```
 
 The first time it launches, macOS asks to allow notifications. If you miss that prompt,
@@ -66,6 +101,9 @@ edits it, and changes made by hand are picked up on the next check.
   "ciResults": "failuresOnly",
   "includeBots": false,
   "mutedRepos": ["sandbox", "your-org/legacy-app"],
+  "checkForUpdates": true,
+  "autoUpdate": false,
+  "includePrereleases": false,
   "bundleIdentifier": "com.yourname.pullse"
 }
 ```
@@ -105,14 +143,46 @@ Pullse only reads from GitHub: its GraphQL requests are queries, never mutations
 test enforces that. State (seen ids and recent history) is kept in
 `~/Library/Application Support/Pullse/state.json`. Delete it to start over.
 
+## Versions and releases
+
+The version lives in `VERSION` (SemVer), and `CHANGELOG.md` records every change under
+`## [Unreleased]` until it ships. The build number is CI's run number, or the commit count
+for local builds.
+
+To cut a release:
+
+```sh
+make release VERSION=0.2.0   # moves [Unreleased] into [0.2.0], updates VERSION, commits, tags v0.2.0
+git push origin main v0.2.0  # the tag push publishes the release
+```
+
+`make release` refuses to run from anywhere but `main`, with uncommitted changes, with a
+version that isn't newer than `VERSION`, or with nothing under `[Unreleased]`. Pushing the
+tag runs `.github/workflows/release.yml`. It checks that the tag matches `VERSION`, tests,
+builds, and publishes a GitHub release with the zip, its checksum, and that version's
+changelog notes. A version like `1.0.0-beta.1` is published as a prerelease.
+
+### CI
+
+`.github/workflows/ci.yml` tests and builds every pull request and every push to `main`
+on a macOS runner, and uploads the zipped app as an artifact. A newer push cancels a run
+still in progress.
+
+Set the bundle id once as a repository variable (Settings → Secrets and variables →
+Actions → Variables → `BUNDLE_ID`) so CI and release builds use it. Keep it the same as
+your local `bundleIdentifier`. macOS remembers notification permission per bundle id, and
+the updater refuses a download whose bundle id differs from the running app's. Without the
+variable, builds use the placeholder `com.example.pullse`.
+
 ## Layout
 
 ```
 Sources/PullseCore/   GitHub client, GraphQL queries, models, EventDetector (pure, tested)
 Sources/Pullse/       SwiftUI menu bar app, notifications, settings
-Tests/PullseTests/    detector, decoding and settings tests
-Support/Info.plist    bundle metadata (LSUIElement: no Dock icon)
-scripts/build-app.sh  assembles and ad-hoc signs "build/Pullse.app"
+Tests/PullseTests/    detector, decoding, settings and update tests
+Support/Info.plist    bundle metadata (LSUIElement: no Dock icon; version stamped at build)
+scripts/              build-app.sh, package.sh, release.sh, changelog-section.sh, test.sh
+.github/workflows/    ci.yml (PRs and main), release.yml (version tags)
 ```
 
 Views use `State(initialValue:)` instead of `@State`. In the macOS 27 SDK, `@State` is a

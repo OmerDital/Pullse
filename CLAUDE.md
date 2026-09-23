@@ -15,7 +15,9 @@ make install   # build, copy to ~/Applications, relaunch
 make check     # build, then one live read-only fetch: prints what the last 24h would notify
 make test      # swift test
 make screenshots  # render docs/screenshots/*.png (menu + settings, light/dark) from sample data
-swift test --filter <testFunctionName>   # a single test (Swift Testing, not XCTest)
+make dist      # build + zip: build/Pullse-<version>.zip and .sha256 (scripts/package.sh)
+make release VERSION=x.y.z  # scripts/release.sh: changelog, VERSION, commit, tag; never pushes
+scripts/test.sh --filter <testFunctionName>   # a single test (Swift Testing, not XCTest)
 swift build    # debug build; enough to type-check the app target
 ```
 
@@ -35,8 +37,9 @@ rule below.
   it fails to compile here. Views use `private let x = State(initialValue: …)` with
   `.wrappedValue` / `.projectedValue`. Other SwiftUI property-wrapper macros may break the
   same way; `@Observable` (Observation) works.
-- `swift test` sometimes fails with "plugin for module 'TestingMacros' not found". Re-run
-  it; it passes on a later attempt with no changes.
+- `swift test` sometimes fails with "plugin for module 'TestingMacros' not found" and
+  passes on a re-run. `scripts/test.sh` (used by `make test` and CI) retries only that
+  error, so run tests through it.
 
 ## Architecture
 
@@ -86,6 +89,24 @@ the interval or org changes. A `poll()` requested while one is running sets `pol
 instead of being dropped. The fetch runs in an unstructured `Task`, so cancelling the loop
 doesn't abort a request half way.
 
+**Versions and updates.** `VERSION` is the only place the version lives.
+`scripts/build-app.sh` stamps it into the bundle, along with a build number and
+`PullseUpdateRepository` (owner/name from `$GITHUB_REPOSITORY` or the `origin` remote). The
+committed `Info.plist` holds placeholders. `Updater` (app target) uses the pure
+`UpdateChecker` (`Updates.swift`) to pick the newest non-draft release above the running
+version that has both `Pullse-<v>.zip` and `.zip.sha256`. Those names come from
+`scripts/package.sh`, so keep the two in sync. Install: download through the REST API with
+the `gh` token (the `Authorization` header is stripped on the redirect to storage), check
+the SHA-256, `ditto -x`, check bundle id, version and `codesign --verify`, then a detached
+`/bin/sh` swaps the bundle after the app quits and reopens it. Installs happen only from
+`/Applications` or `~/Applications`; elsewhere the button opens the release page.
+`PersistedState.lastRunVersion` drives the one-time "updated to x.y.z" notification.
+
+**CI.** `.github/workflows/ci.yml` (PRs, pushes to main) and `release.yml` (`v*` tags;
+tag must equal `v$(cat VERSION)`, and notes come from `scripts/changelog-section.sh`). Both
+run on `macos-26`, and actions are pinned by commit SHA. The bundle id comes from the
+`BUNDLE_ID` repository variable. The repo is private, so macOS runner minutes are limited.
+
 ## Tests
 
 Tests live in `Tests/PullseTests`. They build GraphQL JSON with the helpers in
@@ -100,5 +121,8 @@ rules. The fixture clock is fixed: `lastPoll = t0`, `now = t0 + 60s`, and
   teammates' logins, real repo names and bundle ids. Use placeholders such as `acme`,
   `your-org`, `alice` and `janedoe` in tests, comments, UI prompts and docs; real values
   belong in the settings file.
-- **Pullse must stay read-only toward GitHub.** Only GraphQL queries, never mutations.
-  `everyQueryIsReadOnly` in `ModelAndStoreTests.swift` enforces this.
+- **Pullse must stay read-only toward GitHub.** GraphQL queries and REST GETs only, never
+  mutations or other methods. `everyQueryIsReadOnly` in `ModelAndStoreTests.swift`
+  enforces the GraphQL half.
+- **Every user-visible change adds a line under `## [Unreleased]` in `CHANGELOG.md`.**
+  Don't edit `VERSION` by hand; `make release` does.

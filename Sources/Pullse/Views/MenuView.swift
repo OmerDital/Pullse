@@ -4,11 +4,24 @@ import SwiftUI
 struct MenuView: View {
     let model: AppModel
     @Environment(\.openSettings) private var openSettings
+    /// Height of the event list's content. A ScrollView with a max height grows to that
+    /// max, so the list is sized to its content (up to `maxListHeight`) by measuring it.
+    /// Plain `State`, see EventRow.
+    private let listHeight = State<CGFloat>(initialValue: 0)
+    private let maxListHeight: CGFloat = 440
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
+            if let problem = model.notificationProblem {
+                NotificationsOffBanner(problem: problem) { model.notifier.openSystemSettings() }
+                Divider()
+            }
+            if model.updater.available != nil {
+                UpdateBanner(updater: model.updater)
+                Divider()
+            }
             if model.history.isEmpty {
                 empty
             } else {
@@ -22,13 +35,19 @@ struct MenuView: View {
                         }
                     }
                     .padding(.vertical, 4)
+                    .background(GeometryReader { proxy in
+                        Color.clear.preference(key: ListHeightKey.self, value: proxy.size.height)
+                    })
                 }
-                .frame(maxHeight: 440)
+                .frame(height: min(max(listHeight.wrappedValue, 1), maxListHeight))
+                .onPreferenceChange(ListHeightKey.self) { listHeight.wrappedValue = $0 }
             }
             Divider()
             footer
         }
         .frame(width: 380)
+        // Catches notifications being turned on in System Settings since the last look.
+        .onAppear { Task { await model.refreshNotificationStatus() } }
         // Whatever was unread has now been seen; the highlight stays until the popover closes.
         .onDisappear { model.markAllRead() }
     }
@@ -90,6 +109,10 @@ struct MenuView: View {
             Button("Mark all read") { model.markAllRead() }
                 .disabled(model.unreadCount == 0)
             Spacer()
+            Text("v\(model.updater.version)")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            Spacer()
             Button("Settings…") {
                 NSApp.activate(ignoringOtherApps: true)
                 openSettings()
@@ -110,6 +133,84 @@ struct MenuView: View {
             byPR[event.prURL, default: []].append(event)
         }
         return order.map { ($0, byPR[$0]!) }
+    }
+}
+
+private struct ListHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct NotificationsOffBanner: View {
+    let problem: String
+    let openSettings: () -> Void
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "bell.slash.fill").foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Notifications are off").font(.callout.weight(.semibold))
+                Text(problem)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 4)
+            Button("Turn On…", action: openSettings)
+                .buttonStyle(.borderedProminent)
+        }
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.1))
+    }
+}
+
+private struct UpdateBanner: View {
+    let updater: Updater
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "arrow.up.circle.fill").foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 2) {
+                if let update = updater.available {
+                    Text("Pullse \(update.version.description) is available").font(.callout.weight(.semibold))
+                }
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(updater.error != nil ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 4)
+            if updater.isBusy {
+                ProgressView().controlSize(.small)
+            } else {
+                Button("What's new") { updater.openReleasePage() }
+                Button(updater.canInstallInPlace ? "Install" : "Download") {
+                    Task { await updater.install() }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.08))
+    }
+
+    private var detail: String {
+        switch updater.phase {
+        case .downloading: return "Downloading…"
+        case .installing: return "Verifying and installing…"
+        case .idle, .checking:
+            if let error = updater.error { return error }
+            return updater.canInstallInPlace
+                ? "You have \(updater.version). Pullse restarts to finish."
+                : "You have \(updater.version). Move Pullse to Applications to update in place."
+        }
     }
 }
 
@@ -181,6 +282,7 @@ private struct EventRow: View {
                 event.headline.hasSuffix("approved") ? "checkmark.seal" : "eye"
         case .ci: return event.isNegative ? "xmark.octagon" : "checkmark.circle"
         case .mention: return "at"
+        case .test: return "bell.badge"
         }
     }
 

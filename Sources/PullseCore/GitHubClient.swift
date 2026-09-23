@@ -58,19 +58,70 @@ public actor GitHubClient {
         )
     }
 
-    func graphQL<T: Decodable>(_ query: String, variables: [String: String]) async throws -> T {
+    /// Releases of `repository` ("owner/name"), newest first.
+    public func releases(repository: String) async throws -> [Release] {
+        guard UpdateChecker.isValidRepository(repository),
+              let url = URL(string: "https://api.github.com/repos/\(repository)/releases?per_page=20")
+        else { throw GitHubError.badResponse("invalid repository \(repository)") }
+        let data = try await withTokenRetry { token in
+            try await self.get(url, accept: "application/vnd.github+json", token: token)
+        }
         do {
-            return try await send(query, variables: variables, token: try currentToken())
-        } catch GitHubError.http(401, _) {
-            // The gh token was rotated or re-issued since we cached it.
-            token = nil
-            return try await send(query, variables: variables, token: try currentToken())
+            return try JSONDecoder.githubREST.decode([Release].self, from: data)
+        } catch {
+            throw GitHubError.badResponse(String(describing: error))
         }
     }
 
-    private func send<T: Decodable>(
-        _ query: String, variables: [String: String], token: String
-    ) async throws -> T {
+    /// A release asset's bytes.
+    public func download(_ asset: ReleaseAsset) async throws -> Data {
+        guard let url = URL(string: asset.url), url.host == "api.github.com" else {
+            throw GitHubError.badResponse("unexpected asset URL \(asset.url)")
+        }
+        return try await withTokenRetry { token in
+            try await self.get(url, accept: "application/octet-stream", token: token)
+        }
+    }
+
+    func graphQL<T: Decodable>(_ query: String, variables: [String: String]) async throws -> T {
+        let data = try await withTokenRetry { token in
+            try await self.send(query, variables: variables, token: token)
+        }
+        return try Self.decode(data)
+    }
+
+    private func withTokenRetry(_ body: @Sendable (String) async throws -> Data) async throws -> Data {
+        do {
+            return try await body(try currentToken())
+        } catch GitHubError.http(401, _) {
+            // The gh token was rotated or re-issued since we cached it.
+            token = nil
+            return try await body(try currentToken())
+        }
+    }
+
+    /// A GET, and the only other kind of request besides GraphQL queries: Pullse never
+    /// writes to GitHub.
+    private func get(_ url: URL, accept: String, token: String) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.setValue("bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(accept, forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        request.setValue("Pullse", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 120
+
+        let (data, response) = try await session.data(for: request, delegate: StripAuthorizationOnRedirect())
+        guard let http = response as? HTTPURLResponse else {
+            throw GitHubError.badResponse("not an HTTP response")
+        }
+        guard http.statusCode == 200 else {
+            let text = String(data: data, encoding: .utf8) ?? ""
+            throw GitHubError.http(http.statusCode, String(text.prefix(300)))
+        }
+        return data
+    }
+
+    private func send(_ query: String, variables: [String: String], token: String) async throws -> Data {
         var request = URLRequest(url: URL(string: "https://api.github.com/graphql")!)
         request.httpMethod = "POST"
         request.setValue("bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -89,7 +140,7 @@ public actor GitHubClient {
             let text = String(data: data, encoding: .utf8) ?? ""
             throw GitHubError.http(http.statusCode, String(text.prefix(300)))
         }
-        return try Self.decode(data)
+        return data
     }
 
     static func decode<T: Decodable>(_ data: Data) throws -> T {
@@ -145,6 +196,22 @@ public actor GitHubClient {
             throw GitHubError.notLoggedIn(detail)
         }
         return token
+    }
+}
+
+/// Asset downloads redirect from api.github.com to a pre-signed storage URL. The token
+/// must not follow it there: it would leak to another host, and the storage service
+/// rejects requests that carry a second form of authorization.
+final class StripAuthorizationOnRedirect: NSObject, URLSessionTaskDelegate, Sendable {
+    func urlSession(
+        _ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest
+    ) async -> URLRequest? {
+        var request = request
+        if request.url?.host != task.originalRequest?.url?.host {
+            request.setValue(nil, forHTTPHeaderField: "Authorization")
+        }
+        return request
     }
 }
 

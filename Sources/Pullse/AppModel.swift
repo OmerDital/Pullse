@@ -10,17 +10,22 @@ final class AppModel {
     private(set) var lastPoll: Date?
     private(set) var lastError: String?
     private(set) var isPolling = false
+    /// Set when macOS won't show Pullse's notifications (turned off, never allowed, or no
+    /// banners), in words for the user.
+    private(set) var notificationProblem: String?
 
     var unreadCount: Int { history.filter(\.isUnread).count }
 
     let settings: SettingsModel
+    let updater: Updater
     @ObservationIgnored let notifier = Notifier()
-    @ObservationIgnored private let client = GitHubClient()
+    @ObservationIgnored private let client: GitHubClient
     @ObservationIgnored private let store: StateStore
     @ObservationIgnored private var state: PersistedState
     @ObservationIgnored private var loop: Task<Void, Never>?
     /// A poll was asked for while one was running; run another as soon as it ends.
     @ObservationIgnored private var pollAgain = false
+    @ObservationIgnored private var activationObservers: [NSObjectProtocol] = []
 
     convenience init() {
         self.init(store: StateStore(), settings: SettingsModel())
@@ -29,6 +34,9 @@ final class AppModel {
     init(store: StateStore, settings: SettingsModel) {
         self.store = store
         self.settings = settings
+        let client = GitHubClient()
+        self.client = client
+        updater = Updater(settings: settings, client: client)
         state = store.load()
         history = state.history
     }
@@ -42,7 +50,27 @@ final class AppModel {
 
     func start() {
         notifier.activate()
+        Task { await refreshNotificationStatus() }
+        watchForNotificationSettingChanges()
+        announceUpdateIfNew()
         restartLoop()
+        updater.start()
+    }
+
+    /// Once per new version: "Pullse updated to x.y.z", after an update or a reinstall.
+    private func announceUpdateIfNew() {
+        let current = updater.version
+        defer {
+            if state.lastRunVersion != current {
+                state.lastRunVersion = current
+                save()
+            }
+        }
+        guard let previous = state.lastRunVersion.flatMap(SemanticVersion.init),
+              let now = SemanticVersion(current), now > previous
+        else { return }
+        let notes = updater.repository.map { "https://github.com/\($0)/releases/tag/v\(current)" }
+        notifier.sendUpdated(to: current, notesURL: notes ?? "https://github.com")
     }
 
     /// Poll now and restart the timer (also picks up a changed interval).
@@ -74,6 +102,7 @@ final class AppModel {
     }
 
     private func fetchAndNotify() async {
+        await refreshNotificationStatus()
         settings.reloadIfChanged()
         if let problem = settings.error {
             lastError = problem
@@ -131,6 +160,15 @@ final class AppModel {
                 snapshot, state: SeenState(lastPollAt: dayAgo), settings: settings, now: Date()
             )
             print("Logged in as \(snapshot.login) · \(snapshot.myPullRequests.count) open PRs in \(org) · \(snapshot.mentionedPullRequests.count) PRs mentioning you")
+            print("Notifications: \(await notifier.problem() ?? "allowed, with banners")")
+            await updater.check()
+            if let error = updater.error {
+                print("Updates: \(error)")
+            } else if let update = updater.available {
+                print("Updates: \(update.version.description) is available (\(update.pageURL))")
+            } else {
+                print("Updates: \(updater.version) is up to date (\(updater.repository ?? "no update source"))")
+            }
             print("\(events.count) events in the last 24h:")
             for event in events {
                 print("  \(event.date.formatted(date: .omitted, time: .shortened))  \(event.prLabel)  \(event.headline)  \(event.snippet.prefix(60))")
@@ -149,6 +187,42 @@ final class AppModel {
         }
         history = state.history
         save()
+    }
+
+    /// The permission can change in System Settings at any time. Re-read it whenever Pullse
+    /// is brought forward (opening the menu or Settings does that), rather than relying on
+    /// the menu's onAppear, which a menu bar popover doesn't reliably fire on every open.
+    private func watchForNotificationSettingChanges() {
+        let names = [NSApplication.didBecomeActiveNotification, NSWindow.didBecomeKeyNotification]
+        activationObservers = names.map { name in
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in await self?.refreshNotificationStatus() }
+            }
+        }
+    }
+
+    func refreshNotificationStatus() async {
+        notificationProblem = await notifier.problem()
+    }
+
+    /// "Send test notification": posts one and adds the same item to the activity list,
+    /// linking to the repository Pullse was built from.
+    func sendTest() async {
+        await notifier.requestPermissionIfNeeded()
+        await refreshNotificationStatus()
+        let link = updater.repository.map { "https://github.com/\($0)" } ?? "https://github.com"
+        let event = PREvent(
+            id: "test-\(UUID().uuidString)", kind: .test, repo: "Pullse", number: 0,
+            prTitle: "Test notification", prURL: "pullse:test", author: nil,
+            headline: "Test notification",
+            snippet: notificationProblem.map { "Added here, but not shown by macOS: \($0)" }
+                ?? "Notifications work. Click to open the Pullse repository.",
+            url: link, date: Date()
+        )
+        state.record([event])
+        history = state.history
+        save()
+        notifier.sendTest(event)
     }
 
     func clearHistory() {
