@@ -2,8 +2,9 @@
 
 All notable changes to Pullse are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
-[Semantic Versioning](https://semver.org/). `scripts/release.sh` turns the
-Unreleased section into a version section when a release is cut.
+[Semantic Versioning](https://semver.org/). Every push to main with notes under
+Unreleased is released, and the headings decide the bump: Fixed or Security is a patch,
+Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
@@ -16,7 +17,8 @@ Unreleased section into a version section when a release is cut.
 - Read-only GitHub access using the local `gh` login.
 - Version shown in the app, update checks against GitHub releases, and optional automatic
   updates.
-- GitHub Actions: CI build and test with downloadable artifacts, and tagged releases with
+- GitHub Actions: pull requests are built and tested with downloadable artifacts, and
+  every push to main with changelog notes is released automatically, with a version bump and
   notes from this changelog.
 - A warning in the menu and in Settings when macOS isn't showing Pullse's notifications,
   with a button to the right System Settings page.

@@ -1,13 +1,15 @@
 #!/bin/sh
-# Cut a release locally: scripts/release.sh 0.2.0  (or: make release VERSION=0.2.0)
+# Prepare a release commit: scripts/release.sh [x.y.z]
 #
-# Moves CHANGELOG.md's [Unreleased] notes into a dated [0.2.0] section, writes VERSION,
-# commits "Release 0.2.0" and tags v0.2.0. Nothing is pushed: pushing the tag is what
-# makes GitHub build and publish the release, so that step stays deliberate.
+# Moves CHANGELOG.md's [Unreleased] notes into a dated [x.y.z] section, writes VERSION,
+# commits "Release x.y.z" and tags vx.y.z. Without a version it uses the one
+# scripts/next-version.sh derives from the notes. Nothing is pushed: the Release workflow
+# runs this on every push to main, then pushes the commit and tag and publishes them.
 set -eu
 cd "$(dirname "$0")/.."
 
-NEW="${1:?usage: scripts/release.sh <x.y.z>}"
+NEW="${1:-$(scripts/next-version.sh || true)}"
+[ -n "$NEW" ] || { echo "error: no notes under [Unreleased] in CHANGELOG.md, nothing to release" >&2; exit 1; }
 NEW="${NEW#v}"
 CURRENT="$(tr -d '[:space:]' < VERSION)"
 
@@ -55,5 +57,4 @@ git add CHANGELOG.md VERSION
 git commit -q -m "Release $NEW"
 git tag -a "v$NEW" -m "Pullse $NEW"
 
-echo "Released $NEW locally (commit $(git rev-parse --short HEAD), tag v$NEW)."
-echo "Publish it with:  git push origin main v$NEW"
+echo "$NEW"

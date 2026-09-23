@@ -1,17 +1,15 @@
-# Build and test every pull request and every push to main, and keep the built app as a
-# downloadable artifact. Tags are handled by release.yml, which builds them itself.
+# Build and test every pull request, and keep the built app as a downloadable artifact.
+# Pushes to main are built, tested and released by release.yml.
 name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
 
-# macOS minutes are expensive on private repos: a newer push to the same branch or PR
-# cancels the run it supersedes.
+# macOS minutes are expensive on private repos: a newer push to the same PR cancels the
+# run it supersedes.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

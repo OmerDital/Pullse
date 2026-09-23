@@ -30,7 +30,23 @@ grouped by PR.
 
 ## Download
 
-Every release on the repository's Releases page has `Pullse-<version>.zip`:
+**[⬇ Download the latest release](../../releases/latest)** · [All releases](../../releases) ·
+[Changelog](CHANGELOG.md)
+
+Each release is built by GitHub Actions from `main` and carries two files:
+
+| File | What it is |
+| --- | --- |
+| `Pullse-<version>.zip` | the app, ad-hoc signed |
+| `Pullse-<version>.zip.sha256` | its SHA-256, which the in-app updater checks before installing |
+
+The release notes are that version's section of [CHANGELOG.md](CHANGELOG.md). A new
+release is published automatically whenever changes with changelog notes land on `main`
+(see [Versions and releases](#versions-and-releases)). If the repository is private, you
+need read access to it both to download and for the app's update checks, which use your
+`gh` login.
+
+To install:
 
 1. Unzip it and move `Pullse.app` to `~/Applications` (or `/Applications`).
 2. Open it. Releases are ad-hoc signed rather than notarized, so the first time macOS
@@ -149,24 +165,32 @@ The version lives in `VERSION` (SemVer), and `CHANGELOG.md` records every change
 `## [Unreleased]` until it ships. The build number is CI's run number, or the commit count
 for local builds.
 
-To cut a release:
+Releases are automatic. Every push to `main` runs `.github/workflows/release.yml`, which
+tests and builds the app, and releases it if there are notes under `[Unreleased]`. The
+notes decide the version (`scripts/next-version.sh`):
 
-```sh
-make release VERSION=0.2.0   # moves [Unreleased] into [0.2.0], updates VERSION, commits, tags v0.2.0
-git push origin main v0.2.0  # the tag push publishes the release
-```
+| Under `[Unreleased]` | Bump | Example |
+| --- | --- | --- |
+| nothing | no release; the build is kept as an artifact | |
+| only `### Fixed` / `### Security` | patch | 0.3.1 → 0.3.2 |
+| `### Added` / `Changed` / `Deprecated` / `Removed` | minor | 0.3.1 → 0.4.0 |
+| `### Breaking` | major (minor while below 1.0) | 1.4.2 → 2.0.0 |
 
-`make release` refuses to run from anywhere but `main`, with uncommitted changes, with a
-version that isn't newer than `VERSION`, or with nothing under `[Unreleased]`. Pushing the
-tag runs `.github/workflows/release.yml`. It checks that the tag matches `VERSION`, tests,
-builds, and publishes a GitHub release with the zip, its checksum, and that version's
-changelog notes. A version like `1.0.0-beta.1` is published as a prerelease.
+The workflow moves the notes into a dated `[x.y.z]` section, writes `VERSION`, and pushes a
+"Release x.y.z" commit and a `vx.y.z` tag back to `main`. It then publishes a GitHub
+release with the zip, its checksum, and those notes. **Pull after each release** before
+pushing again, because `main` has the release commit on top of yours. If two pushes land
+close together, the later run releases both.
+
+To pick a version yourself, such as 1.0.0 or a prerelease like `1.1.0-beta.1`, run the
+workflow by hand: Actions → Release → Run workflow, with the version filled in. Prereleases
+are marked as such on GitHub.
 
 ### CI
 
-`.github/workflows/ci.yml` tests and builds every pull request and every push to `main`
-on a macOS runner, and uploads the zipped app as an artifact. A newer push cancels a run
-still in progress.
+`.github/workflows/ci.yml` tests and builds every pull request on a macOS runner, and
+uploads the zipped app as an artifact. A newer push to the PR cancels a run still in
+progress.
 
 Set the bundle id once as a repository variable (Settings → Secrets and variables →
 Actions → Variables → `BUNDLE_ID`) so CI and release builds use it. Keep it the same as
@@ -181,8 +205,8 @@ Sources/PullseCore/   GitHub client, GraphQL queries, models, EventDetector (pur
 Sources/Pullse/       SwiftUI menu bar app, notifications, settings
 Tests/PullseTests/    detector, decoding, settings and update tests
 Support/Info.plist    bundle metadata (LSUIElement: no Dock icon; version stamped at build)
-scripts/              build-app.sh, package.sh, release.sh, changelog-section.sh, test.sh
-.github/workflows/    ci.yml (PRs and main), release.yml (version tags)
+scripts/              build-app.sh, package.sh, release.sh, next-version.sh, changelog-section.sh, test.sh
+.github/workflows/    ci.yml (pull requests), release.yml (pushes to main)
 ```
 
 Views use `State(initialValue:)` instead of `@State`. In the macOS 27 SDK, `@State` is a

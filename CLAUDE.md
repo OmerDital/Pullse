@@ -16,7 +16,7 @@ make check     # build, then one live read-only fetch: prints what the last 24h 
 make test      # swift test
 make screenshots  # render docs/screenshots/*.png (menu + settings, light/dark) from sample data
 make dist      # build + zip: build/Pullse-<version>.zip and .sha256 (scripts/package.sh)
-make release VERSION=x.y.z  # scripts/release.sh: changelog, VERSION, commit, tag; never pushes
+scripts/next-version.sh     # the version the [Unreleased] notes would release as, or exit 1
 scripts/test.sh --filter <testFunctionName>   # a single test (Swift Testing, not XCTest)
 swift build    # debug build; enough to type-check the app target
 ```
@@ -102,9 +102,15 @@ the SHA-256, `ditto -x`, check bundle id, version and `codesign --verify`, then 
 `/Applications` or `~/Applications`; elsewhere the button opens the release page.
 `PersistedState.lastRunVersion` drives the one-time "updated to x.y.z" notification.
 
-**CI.** `.github/workflows/ci.yml` (PRs, pushes to main) and `release.yml` (`v*` tags;
-tag must equal `v$(cat VERSION)`, and notes come from `scripts/changelog-section.sh`). Both
-run on `macos-26`, and actions are pinned by commit SHA. The bundle id comes from the
+**CI and releases.** `.github/workflows/ci.yml` tests and builds pull requests.
+`release.yml` runs on every push to `main`. If `[Unreleased]` has notes, it runs
+`scripts/release.sh`, which picks the bump from the changelog headings via
+`next-version.sh`, moves the notes, writes `VERSION`, and makes the "Release x.y.z" commit
+and tag. It then builds, and only after that pushes the commit and tag back to `main`
+(atomically) and publishes the release. With no notes it only uploads the build as an
+artifact. Pushes made with `GITHUB_TOKEN` don't trigger workflows, so there is no loop. A
+tag push triggers nothing, so a version cut and tagged locally would never be published.
+Both workflows run on `macos-26`, and actions are pinned by commit SHA. The bundle id comes from the
 `BUNDLE_ID` repository variable. The repo is private, so macOS runner minutes are limited.
 
 ## Tests
@@ -124,5 +130,7 @@ rules. The fixture clock is fixed: `lastPoll = t0`, `now = t0 + 60s`, and
 - **Pullse must stay read-only toward GitHub.** GraphQL queries and REST GETs only, never
   mutations or other methods. `everyQueryIsReadOnly` in `ModelAndStoreTests.swift`
   enforces the GraphQL half.
-- **Every user-visible change adds a line under `## [Unreleased]` in `CHANGELOG.md`.**
-  Don't edit `VERSION` by hand; `make release` does.
+- **Every user-visible change adds a line under `## [Unreleased]` in `CHANGELOG.md`**, under
+  the Keep a Changelog heading that matches it. That line is what releases it: the heading
+  sets the bump (`### Fixed` patch, `### Added`/`Changed` minor, `### Breaking` major).
+  Never edit `VERSION` by hand; the release workflow does.
