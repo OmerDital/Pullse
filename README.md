@@ -90,17 +90,52 @@ make dist      # build, then zip it as build/Pullse-<version>.zip with a .sha256
 
 The first time it launches, macOS asks to allow notifications. If you miss that prompt,
 turn notifications on in System Settings → Notifications → Pullse. Then open Settings…
-from the menu, enter the GitHub organization to watch, and turn on "Launch at login" if
-you want it. Pullse does nothing until an organization is set.
+from the menu (or right-click the menu bar icon), enter the GitHub organization to watch
+on the GitHub tab, and turn on "Launch at login" on the App tab if you want it. Pullse does nothing until an organization is set.
 
 ## Settings
 
+The Settings window has a tab for each area, listed down the left side:
+
+| Tab | What's on it |
+| --- | --- |
+| **GitHub** | the organization to watch, how often to check, and the result of the last check |
+| **Notifications** | which events notify, the CI results mode, filters (bots, muted repositories), and a test notification. A warning appears here when macOS isn't showing Pullse's notifications |
+| **Updates** | the running version, Check now, and the automatic update toggles |
+| **App** | Launch at login, and where the settings file lives |
+
+A dot on a tab means it needs a look: notifications are off, or an update is waiting.
+
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
-    <img src="docs/screenshots/settings-light.png" width="460" alt="The Pullse Settings window: organization, check interval, event toggles, filters and app options">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-notifications-dark.png">
+    <img src="docs/screenshots/settings-notifications-light.png" width="640" alt="The Notifications tab of Pullse Settings: event toggles, CI results mode, filters and a test notification button">
   </picture>
 </p>
+
+<details>
+<summary>The other tabs</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-github-dark.png">
+    <img src="docs/screenshots/settings-github-light.png" width="640" alt="The GitHub tab: organization and check interval">
+  </picture>
+</p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-updates-dark.png">
+    <img src="docs/screenshots/settings-updates-light.png" width="640" alt="The Updates tab: version, Check now, and automatic update toggles">
+  </picture>
+</p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-app-dark.png">
+    <img src="docs/screenshots/settings-app-light.png" width="640" alt="The App tab: launch at login and the settings file location">
+  </picture>
+</p>
+
+</details>
 
 Everything specific to you lives in `~/.config/pullse/settings.json`, outside this
 repository. The app creates the file with defaults on first launch. The Settings window

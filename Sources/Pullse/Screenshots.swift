@@ -2,7 +2,7 @@ import AppKit
 import PullseCore
 import SwiftUI
 
-/// `Pullse --screenshots <dir>`: renders the menu and the Settings window, in light and
+/// `Pullse --screenshots <dir>`: renders the menu and each Settings tab, in light and
 /// dark, to PNGs for the README. The data is made up and the app never talks to GitHub
 /// or touches the real settings and state files in this mode.
 ///
@@ -18,8 +18,11 @@ enum Screenshots {
                     // A fresh model per picture: closing the menu marks everything read.
                     try await snapshot(popover(MenuView(model: try sampleModel())), appearance: appearance,
                                        to: directory.appendingPathComponent("menu-\(suffix).png"))
-                    try await snapshot(popover(SettingsView(model: try sampleModel())), appearance: appearance,
-                                       to: directory.appendingPathComponent("settings-\(suffix).png"))
+                    for tab in SettingsTab.allCases {
+                        try await snapshot(popover(SettingsView(model: try sampleModel(), tab: tab)),
+                                           appearance: appearance,
+                                           to: directory.appendingPathComponent("settings-\(tab.rawValue)-\(suffix).png"))
+                    }
                 }
                 exit(0)
             } catch {

@@ -14,7 +14,7 @@ make run       # build and open build/Pullse.app
 make install   # build, copy to ~/Applications, relaunch
 make check     # build, then one live read-only fetch: prints what the last 24h would notify
 make test      # swift test
-make screenshots  # render docs/screenshots/*.png (menu + settings, light/dark) from sample data
+make screenshots  # render docs/screenshots/*.png (menu + each Settings tab, light/dark) from sample data
 make dist      # build + zip: build/Pullse-<version>.zip and .sha256 (scripts/package.sh)
 scripts/next-version.sh     # the version the [Unreleased] notes would release as, or exit 1
 scripts/test.sh --filter <testFunctionName>   # a single test (Swift Testing, not XCTest)
@@ -29,7 +29,8 @@ flag on the binary) runs one fetch, prints, and exits without notifying or touch
 state. `Pullse --screenshots <dir>` (`Screenshots.swift`) draws the real views into
 off-screen windows, using sample data and temporary files, so it needs no Screen Recording
 permission. Re-run it after UI changes; the sample data follows the placeholder-names
-rule below.
+rule below. It renders one picture per `SettingsTab` (`settings-<tab>-<light|dark>.png`),
+so a new tab gets a screenshot automatically, but the README links each one by name.
 
 ## Toolchain quirks (Command Line Tools only, macOS 27 SDK)
 
