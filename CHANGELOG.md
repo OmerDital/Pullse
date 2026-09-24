@@ -8,6 +8,13 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+### Changed
+- Updates are checked every hour instead of every 6 hours.
+
+### Fixed
+- "Checked … ago" in Settings now keeps counting instead of freezing at the time the
+  window opened.
+
 ## [0.4.0] - 2026-09-24
 
 ### Changed

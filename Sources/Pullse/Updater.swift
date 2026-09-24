@@ -27,7 +27,7 @@ final class Updater {
     /// owner/name of the repo this build came from; nil disables updates.
     let repository: String?
 
-    static let checkInterval: Duration = .seconds(6 * 60 * 60)
+    static let checkInterval: Duration = .seconds(60 * 60)
 
     @ObservationIgnored private let settings: SettingsModel
     @ObservationIgnored private let client: GitHubClient

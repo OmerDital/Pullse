@@ -127,7 +127,10 @@ struct SettingsView: View {
                 if let error = model.lastError {
                     Footnote(error, isError: true)
                 } else if let lastPoll = model.lastPoll {
-                    Footnote("\(model.openPullRequests) open PRs in \(settings.current.org) · checked \(lastPoll.formatted(.relative(presentation: .named)))")
+                    // Re-rendered on a timer, or "checked 24 seconds ago" never ages.
+                    TimelineView(.periodic(from: .now, by: 15)) { _ in
+                        Footnote("\(model.openPullRequests) open PRs in \(settings.current.org) · checked \(lastPoll.formatted(.relative(presentation: .named)))")
+                    }
                 }
                 Footnote("Pullse signs in with your GitHub CLI login (gh auth login) and only reads from GitHub.")
             }
@@ -201,10 +204,12 @@ struct SettingsView: View {
                     ProgressView().controlSize(.small)
                 }
                 Spacer()
-                Text(updateStatus)
-                    .font(.caption)
-                    .foregroundStyle(updater.error != nil ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
-                    .multilineTextAlignment(.trailing)
+                TimelineView(.periodic(from: .now, by: 15)) { _ in
+                    Text(updateStatus)
+                        .font(.caption)
+                        .foregroundStyle(updater.error != nil ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                        .multilineTextAlignment(.trailing)
+                }
             }
         } header: {
             Text("Pullse")
