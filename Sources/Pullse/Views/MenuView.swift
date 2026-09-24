@@ -108,6 +108,9 @@ struct MenuView: View {
         HStack {
             Button("Mark all read") { model.markAllRead() }
                 .disabled(model.unreadCount == 0)
+            Button("Clear") { model.clearHistory() }
+                .disabled(model.history.isEmpty)
+                .help("Remove everything from this list")
             Spacer()
             Text("v\(model.updater.version)")
                 .font(.caption)

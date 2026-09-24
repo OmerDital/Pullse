@@ -117,10 +117,7 @@ struct SettingsView: View {
                 if let loginError = loginError.wrappedValue {
                     Text(loginError).font(.caption).foregroundStyle(.red)
                 }
-                HStack {
-                    Button("Send test notification") { Task { await model.sendTest() } }
-                    Button("Clear history") { model.clearHistory() }
-                }
+                Button("Send test notification") { Task { await model.sendTest() } }
             } header: {
                 Text("App")
             } footer: {
