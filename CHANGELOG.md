@@ -8,6 +8,10 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+### Added
+- Right-click (or Control-click) the menu bar icon for a menu with About Pullse (opens
+  the GitHub repository), Settings and Quit.
+
 ## [0.2.0] - 2026-09-24
 
 ### Changed

@@ -9,7 +9,7 @@ struct PullseApp: App {
         MenuBarExtra {
             MenuView(model: appDelegate.model)
         } label: {
-            MenuBarLabel(model: appDelegate.model)
+            MenuBarLabel(model: appDelegate.model, statusMenu: appDelegate.statusMenu)
         }
         .menuBarExtraStyle(.window)
 
@@ -22,9 +22,11 @@ struct PullseApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
+    let statusMenu: StatusItemMenu
 
     override init() {
         model = AppModel()
+        statusMenu = StatusItemMenu(model: model)
         super.init()
     }
 
@@ -39,11 +41,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         model.start()
+        statusMenu.install()
     }
 }
 
 struct MenuBarLabel: View {
     let model: AppModel
+    let statusMenu: StatusItemMenu
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         let unread = model.unreadCount
@@ -58,5 +63,8 @@ struct MenuBarLabel: View {
                 Image(systemName: "arrow.up.circle.fill")
             }
         }
+        // The right-click menu lives in AppKit, which has no public way to open the
+        // Settings scene; this view is always on screen, so it hands SwiftUI's over.
+        .onAppear { statusMenu.openSettingsAction = openSettings }
     }
 }

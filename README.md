@@ -11,7 +11,7 @@ GitHub pull requests in an organization you choose:
 You can turn each of these on or off, and bots (github-actions, Terraform plan bots,
 dependabot, …) are muted by default. Clicking a notification opens the comment, review or
 check. The menu bar icon shows an unread count, and its popover lists recent activity
-grouped by PR.
+grouped by PR. Right-click the icon for About (the GitHub repository), Settings and Quit.
 
 <p align="center">
   <picture>
