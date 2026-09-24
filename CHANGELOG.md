@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-24
+
 ### Changed
 - Settings is split into tabs listed down the left: GitHub, Notifications (with the
   filters), Updates and App. A dot marks a tab that needs attention.
