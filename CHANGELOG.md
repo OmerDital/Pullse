@@ -8,6 +8,10 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+### Added
+- When "Check now" (or any check) finds a new version, the Updates tab shows it with
+  What's new and Install buttons, so there's no need to go back to the menu.
+
 ## [0.5.0] - 2026-09-24
 
 ### Changed

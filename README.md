@@ -63,7 +63,8 @@ Every CI run also keeps a build of that commit as a downloadable artifact for 14
 
 Pullse checks the repository's releases on launch and every hour. When a newer one
 exists, the menu bar icon gets an arrow and the menu shows **Pullse x.y.z is available**,
-with *What's new* and *Install*. Install downloads the release, checks it against its
+with *What's new* and *Install*. The same buttons appear on the Updates tab in Settings, so
+after *Check now* you can install from there. Install downloads the release, checks it against its
 published SHA-256, checks that it is Pullse at the expected version with an intact
 signature, swaps it in and relaunches. After the relaunch a notification confirms the
 new version.

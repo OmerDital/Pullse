@@ -186,10 +186,16 @@ struct SettingsView: View {
     // MARK: - Updates
 
     private var updateStatus: String {
+        switch updater.phase {
+        case .downloading: return "Downloading…"
+        case .installing: return "Verifying and installing…"
+        case .idle, .checking: break
+        }
         if let error = updater.error { return error }
-        if let update = updater.available { return "\(update.version.description) is available" }
         if let checked = updater.lastChecked {
-            return "Up to date · checked \(checked.formatted(.relative(presentation: .named)))"
+            // An update found gets its own row below, with the Install button.
+            let when = "checked \(checked.formatted(.relative(presentation: .named)))"
+            return updater.available != nil ? "Update found · \(when)" : "Up to date · \(when)"
         }
         return updater.repository == nil ? "This build has no update source" : ""
     }
@@ -211,8 +217,31 @@ struct SettingsView: View {
                         .multilineTextAlignment(.trailing)
                 }
             }
+            // Install right here, without going back to the menu's banner.
+            if let update = updater.available {
+                HStack {
+                    Label("Pullse \(update.version.description) is available", systemImage: "arrow.up.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                    Spacer()
+                    if updater.phase == .downloading || updater.phase == .installing {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("What's new") { updater.openReleasePage() }
+                            .buttonStyle(.link)
+                        Button(updater.canInstallInPlace ? "Install" : "Download") {
+                            Task { await updater.install() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(updater.isBusy)
+                    }
+                }
+            }
         } header: {
             Text("Pullse")
+        } footer: {
+            if updater.available != nil, updater.canInstallInPlace {
+                Footnote("Install downloads the update, checks it, and restarts Pullse.")
+            }
         }
 
         Section {
