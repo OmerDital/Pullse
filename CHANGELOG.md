@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-24
+
 ### Changed
 - "Clear" moved from Settings to the menu, next to "Mark all read".
 
