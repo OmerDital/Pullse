@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-24
+
 ### Changed
 - Updates are checked every hour instead of every 6 hours.
 
