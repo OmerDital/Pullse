@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-28
+
 ### Added
 - A downloaded copy that macOS runs from a temporary location (or from Downloads) offers
   to move itself to Applications, so it can update itself from then on. The update banner
