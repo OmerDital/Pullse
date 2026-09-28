@@ -16,6 +16,7 @@ make check     # build, then one live read-only fetch: prints what the last 24h 
 make test      # swift test
 make demo      # render docs/demo/*.gif (notifications, Settings tour, update) from sample data
 make dist      # build + zip: build/Pullse-<version>.zip and .sha256 (scripts/package.sh)
+make stats     # read-only download counts per release (manual vs in-app updates), plus repo traffic
 scripts/next-version.sh     # the version the [Unreleased] notes would release as, or exit 1
 scripts/test.sh --filter <testFunctionName>   # a single test (Swift Testing, not XCTest)
 swift build    # debug build; enough to type-check the app target
@@ -121,7 +122,9 @@ move.
 `next-version.sh`, moves the notes, writes `VERSION`, rewrites the README's static
 shields.io version badge (static, so it needs no lookup of the releases), and
 makes the "Release x.y.z" commit and tag. The README's other badges and links are
-relative (`../../actions/…`, `../../releases/…`) so they carry no owner or repo name. It then builds, and only after that pushes the commit and tag back to `main`
+relative (`../../actions/…`, `../../releases/…`) so they carry no owner or repo name,
+except the downloads badge: shields.io needs `owner/repo` in its URL, and it is the one
+deliberate place the repository is named. It then builds, and only after that pushes the commit and tag back to `main`
 (atomically) and publishes the release. With no notes it only uploads the build as an
 artifact. Pushes made with `GITHUB_TOKEN` don't trigger workflows, so there is no loop. A
 tag push triggers nothing, so a version cut and tagged locally would never be published.
