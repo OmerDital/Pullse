@@ -146,6 +146,12 @@ rules. The fixture clock is fixed: `lastPoll = t0`, `now = t0 + 60s`, and
   `your-org`, `alice` and `janedoe` in tests, comments, UI prompts and docs; real values
   belong in the settings file.
 - Licensed under Apache 2.0 (`LICENSE`, `NOTICE`), copyright "Pullse contributors".
+- **Only GitHub links are opened.** Everything handed to `NSWorkspace.open` from GitHub
+  data goes through `GitHubLink` (https on github.com only). CI links (`detailsUrl`,
+  `targetUrl`) are set by third parties, and `NSWorkspace` follows any URL scheme.
+- **The release job's token only reaches steps that run no repository code.** Checkout
+  doesn't persist credentials; the "main moved on" check and Publish get `GH_TOKEN`
+  in their own `env`. Keep it that way when adding steps.
 - **Pullse must stay read-only toward GitHub.** GraphQL queries and REST GETs only, never
   mutations or other methods. `everyQueryIsReadOnly` in `ModelAndStoreTests.swift`
   enforces the GraphQL half.

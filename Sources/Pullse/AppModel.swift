@@ -238,7 +238,8 @@ final class AppModel {
             history = state.history
             save()
         }
-        if let url = URL(string: event.url) {
+        // History may predate the link check, so check again right before opening.
+        if let link = GitHubLink.safe(event.url, fallback: event.prURL), let url = URL(string: link) {
             NSWorkspace.shared.open(url)
         }
     }

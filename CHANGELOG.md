@@ -8,6 +8,11 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+### Security
+- Clicking a notification or activity item only opens GitHub pages over https. A CI
+  link set by the reporting integration to anything else (another site, `file://`,
+  `smb://`, another app's URL scheme) now opens the pull request's checks page instead.
+
 ## [0.8.0] - 2026-09-28
 
 ### Changed

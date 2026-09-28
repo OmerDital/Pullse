@@ -166,7 +166,8 @@ private func settings(_ change: (inout DetectorSettings) -> Void) -> DetectorSet
         status("error", "ERROR"), status("pending", "PENDING"), status("ok", "SUCCESS"),
     ])])
     #expect(detect(snap).map(\.headline) == ["CI failed: ci/error"])
-    #expect(detect(snap).first?.url == "https://ci.example/error")
+    // A status's own link is off GitHub, so the event links to the PR's checks page.
+    #expect(detect(snap).first?.url == "https://github.com/acme/api/pull/1/checks")
     #expect(Set(detect(snap, settings: settings { $0.ciMode = .all }).map(\.headline))
         == ["CI failed: ci/error", "CI finished: ci/ok"])
 }

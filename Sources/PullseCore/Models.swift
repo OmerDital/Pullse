@@ -90,7 +90,10 @@ public struct CheckContext: Decodable, Sendable {
     }
 
     public var finishedAt: Date? { completedAt ?? createdAt }
-    public var link: String? { detailsUrl ?? targetUrl }
+    /// The check's own page, only when it is on GitHub: `detailsUrl` and `targetUrl` are
+    /// set by whoever reports the check (see `GitHubLink`). Nil makes the event link to
+    /// the PR's checks page instead.
+    public var link: String? { GitHubLink.safe(detailsUrl ?? targetUrl) }
 }
 
 public struct StatusCheckRollup: Decodable, Sendable {

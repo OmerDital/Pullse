@@ -119,7 +119,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate, @unchecked Sen
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         if let link = response.notification.request.content.userInfo["url"] as? String,
-           let url = URL(string: link) {
+           GitHubLink.isSafe(link), let url = URL(string: link) {
             DispatchQueue.main.async { NSWorkspace.shared.open(url) }
         }
         completionHandler()
