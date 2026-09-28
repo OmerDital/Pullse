@@ -20,7 +20,7 @@ grouped by PR. Right-click the icon for About (the GitHub repository), Settings 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
-    <img src="docs/screenshots/menu-light.png" width="380" alt="The Pullse menu: recent activity grouped by pull request, with unread items marked">
+    <img src="docs/screenshots/menu-light.png" width="440" alt="The Pullse menu open under its menu bar icon: recent activity grouped by pull request, with unread items marked">
   </picture>
 </p>
 
@@ -148,7 +148,7 @@ A dot on a tab means it needs a look: notifications are off, or an update is wai
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-notifications-dark.png">
-    <img src="docs/screenshots/settings-notifications-light.png" width="640" alt="The Notifications tab of Pullse Settings: event toggles, CI results mode, filters and a test notification button">
+    <img src="docs/screenshots/settings-notifications-light.png" width="700" alt="The Notifications tab of Pullse Settings: event toggles, CI results mode, filters and a test notification button">
   </picture>
 </p>
 
@@ -158,19 +158,19 @@ A dot on a tab means it needs a look: notifications are off, or an update is wai
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-github-dark.png">
-    <img src="docs/screenshots/settings-github-light.png" width="640" alt="The GitHub tab: organization and check interval">
+    <img src="docs/screenshots/settings-github-light.png" width="700" alt="The GitHub tab: organization and check interval">
   </picture>
 </p>
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-updates-dark.png">
-    <img src="docs/screenshots/settings-updates-light.png" width="640" alt="The Updates tab: version, Check now, and automatic update toggles">
+    <img src="docs/screenshots/settings-updates-light.png" width="700" alt="The Updates tab: version, Check now, and automatic update toggles">
   </picture>
 </p>
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-app-dark.png">
-    <img src="docs/screenshots/settings-app-light.png" width="640" alt="The App tab: launch at login and the settings file location">
+    <img src="docs/screenshots/settings-app-light.png" width="700" alt="The App tab: launch at login and the settings file location">
   </picture>
 </p>
 

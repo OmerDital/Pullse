@@ -2,8 +2,8 @@ import AppKit
 import PullseCore
 import SwiftUI
 
-/// `Pullse --screenshots <dir>`: renders the menu and each Settings tab, in light and
-/// dark, to PNGs for the README. The data is made up and the app never talks to GitHub
+/// `Pullse --screenshots <dir>`: renders the menu (open on a desktop) and each Settings
+/// tab (on the wallpaper), in light and dark, to PNGs for the README. The data is made up and the app never talks to GitHub
 /// or touches the real settings and state files in this mode.
 ///
 /// Views are drawn from an off-screen window of this process, so no Screen Recording
@@ -15,12 +15,17 @@ enum Screenshots {
             do {
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-                    // A fresh model per picture: closing the menu marks everything read.
-                    try await snapshot(popover(MenuView(model: try sampleModel())), appearance: appearance,
+                    // Same scenery as the README's GIFs (Demo.swift): the menu open under its
+                    // icon on a desktop, and each Settings tab on the wallpaper. A fresh model
+                    // per picture: closing the menu marks everything read.
+                    try await snapshot(DemoDesktop(model: try sampleModel(), menu: true, width: 440), appearance: appearance,
                                        to: directory.appendingPathComponent("menu-\(suffix).png"))
                     for tab in SettingsTab.allCases {
-                        try await snapshot(popover(SettingsView(model: try sampleModel(), tab: tab)),
-                                           appearance: appearance,
+                        let window = popover(SettingsView(model: try sampleModel(), tab: tab))
+                            .fixedSize()
+                            .padding(28)
+                            .background(DemoWallpaper())
+                        try await snapshot(window, appearance: appearance,
                                            to: directory.appendingPathComponent("settings-\(tab.rawValue)-\(suffix).png"))
                     }
                 }

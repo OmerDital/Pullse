@@ -193,13 +193,22 @@ enum Demo {
 
 // MARK: - Scene pieces
 
-private let wallpaper = LinearGradient(
-    colors: [Color(red: 0.35, green: 0.53, blue: 0.87), Color(red: 0.60, green: 0.45, blue: 0.80)],
-    startPoint: .topLeading, endPoint: .bottomTrailing
-)
+/// The desktop behind every scene, a shade darker in dark mode.
+struct DemoWallpaper: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        LinearGradient(
+            colors: scheme == .dark
+                ? [Color(red: 0.13, green: 0.20, blue: 0.40), Color(red: 0.27, green: 0.18, blue: 0.40)]
+                : [Color(red: 0.35, green: 0.53, blue: 0.87), Color(red: 0.60, green: 0.45, blue: 0.80)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    }
+}
 
 /// A fixed-size wallpaper with `content` on it and an optional pointer on top.
-private struct DemoCanvas<Content: View>: View {
+struct DemoCanvas<Content: View>: View {
     let size: CGSize
     var cursor: CGPoint?
     var click = false
@@ -207,7 +216,7 @@ private struct DemoCanvas<Content: View>: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            wallpaper
+            DemoWallpaper()
             content()
             if let cursor {
                 DemoPointer(click: click).offset(x: cursor.x, y: cursor.y)
@@ -215,13 +224,12 @@ private struct DemoCanvas<Content: View>: View {
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
         .clipped()
-        .environment(\.colorScheme, .light)
     }
 }
 
 /// A desktop with a menu bar; Pullse's label sits in it at `icon`, and its menu opens
 /// under it.
-private struct DemoDesktop: View {
+struct DemoDesktop: View {
     static let size = CGSize(width: 760, height: 590)
     /// Center of Pullse's menu bar label: the right side of the bar is laid out in fixed
     /// widths so this is known.
@@ -229,6 +237,7 @@ private struct DemoDesktop: View {
     /// Top-left corner of the open menu.
     static let menuOrigin = CGPoint(x: icon.x - 191, y: 31)
 
+    @Environment(\.colorScheme) private var scheme
     let model: AppModel
     var iconVisible = true
     var menu = false
@@ -236,17 +245,35 @@ private struct DemoDesktop: View {
     var bannerShown: CGFloat = 1
     var cursor: CGPoint?
     var click = false
+    /// Narrower than the GIFs' desktop for a still picture of the open menu: the icon and
+    /// menu keep their distance from the right edge, so only empty desktop is cut.
+    var width: CGFloat
+
+    init(model: AppModel, iconVisible: Bool = true, menu: Bool = false, banner: DemoBanner? = nil,
+         bannerShown: CGFloat = 1, cursor: CGPoint? = nil, click: Bool = false,
+         width: CGFloat = DemoDesktop.size.width) {
+        self.width = width
+        self.model = model
+        self.iconVisible = iconVisible
+        self.menu = menu
+        self.banner = banner
+        self.bannerShown = bannerShown
+        self.cursor = cursor
+        self.click = click
+    }
 
     var body: some View {
-        DemoCanvas(size: Self.size, cursor: cursor, click: click) {
+        // Everything is placed from the right edge, like a real menu bar.
+        let shift = width - Self.size.width
+        DemoCanvas(size: CGSize(width: width, height: Self.size.height), cursor: cursor, click: click) {
             menuBar
             if menu {
                 Screenshots.popover(MenuView(model: model))
                     .fixedSize()
-                    .offset(x: Self.menuOrigin.x, y: Self.menuOrigin.y)
+                    .offset(x: Self.menuOrigin.x + shift, y: Self.menuOrigin.y)
             }
             if let banner {
-                banner.offset(x: Self.size.width - DemoBanner.width - 12 + (1 - bannerShown) * (DemoBanner.width + 24),
+                banner.offset(x: width - DemoBanner.width - 12 + (1 - bannerShown) * (DemoBanner.width + 24),
                               y: 36)
             }
         }
@@ -256,10 +283,13 @@ private struct DemoDesktop: View {
         HStack(spacing: 14) {
             Image(systemName: "applelogo")
             Text("Finder").fontWeight(.semibold)
-            Text("File")
-            Text("Edit")
-            Text("View")
-            Text("Window")
+            // A narrow desktop has room for the app name only, as a real menu bar would.
+            if width >= Self.size.width {
+                Text("File")
+                Text("Edit")
+                Text("View")
+                Text("Window")
+            }
             Spacer()
             Group {
                 if iconVisible {
@@ -272,15 +302,15 @@ private struct DemoDesktop: View {
             Text("Mon 9:41").frame(width: 80, alignment: .trailing)
         }
         .font(.system(size: 13))
-        .foregroundStyle(.black)
+        .foregroundStyle(.primary)
         .padding(.horizontal, 14)
-        .frame(width: Self.size.width, height: 26)
-        .background(Color.white.opacity(0.72))
+        .frame(width: width, height: 26)
+        .background(scheme == .dark ? Color.black.opacity(0.35) : Color.white.opacity(0.72))
     }
 }
 
 /// A macOS-style notification banner, laid out like the ones `Notifier` posts.
-private struct DemoBanner: View {
+struct DemoBanner: View {
     static let width: CGFloat = 344
 
     let title: String
@@ -331,7 +361,7 @@ private struct DemoBanner: View {
 }
 
 /// The arrow pointer, tip at the view's origin, with a ring while it clicks.
-private struct DemoPointer: View {
+struct DemoPointer: View {
     let click: Bool
 
     var body: some View {

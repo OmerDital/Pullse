@@ -30,7 +30,8 @@ flag on the binary) runs one fetch, prints, and exits without notifying or touch
 state. `Pullse --screenshots <dir>` (`Screenshots.swift`) draws the real views into
 off-screen windows, using sample data and temporary files, so it needs no Screen Recording
 permission. Re-run it after UI changes; the sample data follows the placeholder-names
-rule below. It renders one picture per `SettingsTab` (`settings-<tab>-<light|dark>.png`),
+rule below. The stills use the GIFs' scenery from `Demo.swift` (the menu open on a
+narrow desktop, Settings on the wallpaper). It renders one picture per `SettingsTab` (`settings-<tab>-<light|dark>.png`),
 so a new tab gets a screenshot automatically, but the README links each one by name. `Pullse --demo <dir>` (`Demo.swift`) renders the README's GIFs the same way: each
 frame is the real views inside a made-up desktop (menu bar, notification banners, a
 pointer), and ImageIO writes the GIF. The pointer and menu positions are fixed
