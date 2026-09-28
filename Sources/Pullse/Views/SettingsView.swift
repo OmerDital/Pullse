@@ -253,10 +253,13 @@ struct SettingsView: View {
             Toggle("Check for updates automatically", isOn: settings.binding(\.checkForUpdates))
             Toggle("Install updates automatically", isOn: settings.binding(\.autoUpdate))
             Toggle("Include prereleases", isOn: settings.binding(\.includePrereleases))
+            Toggle("Notify me after Pullse updates", isOn: settings.binding(\.notifyAfterUpdate))
         } header: {
             Text("Automatic updates")
         } footer: {
-            if AppMover.shouldOffer {
+            if updater.canInstallInPlace, settings.current.autoUpdate {
+                Footnote("Automatic installs wait until the menu and this window are closed, then restart Pullse.")
+            } else if AppMover.shouldOffer {
                 HStack(alignment: .firstTextBaseline) {
                     Footnote("Pullse is running from a download location, where it can't update itself. Move it to Applications once and updates install in place.")
                     Button("Move to Applications…") { AppMover.move() }

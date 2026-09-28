@@ -67,7 +67,8 @@ final class AppModel {
             }
         }
         guard let previous = state.lastRunVersion.flatMap(SemanticVersion.init),
-              let now = SemanticVersion(current), now > previous
+              let now = SemanticVersion(current), now > previous,
+              settings.current.notifyAfterUpdate
         else { return }
         let notes = updater.repository.map { "https://github.com/\($0)/releases/tag/v\(current)" }
         notifier.sendUpdated(to: current, notesURL: notes ?? "https://github.com")

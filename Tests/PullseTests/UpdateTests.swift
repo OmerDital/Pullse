@@ -149,12 +149,23 @@ private let hash = String(repeating: "ab", count: 32)
     #expect(settings.checkForUpdates)
     #expect(!settings.autoUpdate)
     #expect(!settings.includePrereleases)
+    #expect(settings.notifyAfterUpdate)
 
     let decoded = try JSONDecoder().decode(
         PullseSettings.self, from: Data(#"{ "autoUpdate": true }"#.utf8)
     )
     #expect(decoded.autoUpdate)
     #expect(decoded.checkForUpdates)
+    #expect(decoded.notifyAfterUpdate)
+}
+
+@Test func theUpdatedNotificationCanBeTurnedOff() throws {
+    let decoded = try JSONDecoder().decode(
+        PullseSettings.self, from: Data(#"{ "notifyAfterUpdate": false }"#.utf8)
+    )
+    #expect(!decoded.notifyAfterUpdate)
+    let saved = try JSONDecoder().decode(PullseSettings.self, from: JSONEncoder().encode(decoded))
+    #expect(!saved.notifyAfterUpdate)
 }
 
 @Test func stateFilesFromBeforeVersionTrackingStillLoad() throws {

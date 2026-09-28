@@ -105,7 +105,9 @@ signature, swaps it in and relaunches. After the relaunch a notification confirm
 new version.
 
 Turn on **Install updates automatically** in Settings to have that happen without asking.
-Updates install in place only when Pullse lives in `/Applications` or `~/Applications`.
+An automatic install waits while the menu or Settings is open, so Pullse never restarts
+under you. To skip the "updated" notification too, turn off **Notify me after Pullse
+updates**. Updates install in place only when Pullse lives in `/Applications` or `~/Applications`.
 Anywhere else, Install opens the release page instead. Prereleases are skipped unless
 **Include prereleases** is on.
 
@@ -192,6 +194,7 @@ edits it, and changes made by hand are picked up on the next check.
   "checkForUpdates": true,
   "autoUpdate": false,
   "includePrereleases": false,
+  "notifyAfterUpdate": true,
   "bundleIdentifier": "com.yourname.pullse"
 }
 ```

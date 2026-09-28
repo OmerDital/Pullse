@@ -14,11 +14,13 @@ public struct PullseSettings: Codable, Equatable, Sendable {
     public var ciResults: DetectorSettings.CIMode = .failuresOnly
     public var includeBots = false
     public var mutedRepos: [String] = []
-    /// Look for new releases (on launch and every few hours) and show when one exists.
+    /// Look for new releases (on launch and every hour) and show when one exists.
     public var checkForUpdates = true
-    /// Install a new release as soon as it's found and relaunch.
+    /// Install a new release once it's found and Pullse isn't in use, then relaunch.
     public var autoUpdate = false
     public var includePrereleases = false
+    /// Post "Pullse updated to x.y.z" on the first launch of a new version.
+    public var notifyAfterUpdate = true
     /// Read by `scripts/build-app.sh` when bundling, never by the app itself. Macs key
     /// notification permission and login items by it, so it should stay the same
     /// between builds.
@@ -44,6 +46,7 @@ public struct PullseSettings: Codable, Equatable, Sendable {
         checkForUpdates = try c.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? d.checkForUpdates
         autoUpdate = try c.decodeIfPresent(Bool.self, forKey: .autoUpdate) ?? d.autoUpdate
         includePrereleases = try c.decodeIfPresent(Bool.self, forKey: .includePrereleases) ?? d.includePrereleases
+        notifyAfterUpdate = try c.decodeIfPresent(Bool.self, forKey: .notifyAfterUpdate) ?? d.notifyAfterUpdate
         bundleIdentifier = try c.decodeIfPresent(String.self, forKey: .bundleIdentifier)
     }
 

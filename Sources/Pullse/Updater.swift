@@ -33,6 +33,8 @@ final class Updater {
     @ObservationIgnored private let client: GitHubClient
     @ObservationIgnored private var loop: Task<Void, Never>?
     @ObservationIgnored private var previewInstallable: Bool?
+    /// How long an automatic install waits between looks at whether Pullse is in use.
+    static let busyRetry: Duration = .seconds(30)
 
     init(settings: SettingsModel, client: GitHubClient, bundle: Bundle = .main) {
         self.settings = settings
@@ -72,9 +74,20 @@ final class Updater {
     private func scheduledCheck() async {
         guard settings.current.checkForUpdates || settings.current.autoUpdate else { return }
         await check()
-        if settings.current.autoUpdate, available != nil, canInstallInPlace {
-            await install()
+        guard settings.current.autoUpdate, available != nil, canInstallInPlace else { return }
+        // Installing quits and relaunches Pullse; never do that under someone reading the
+        // menu or changing a setting. Wait until both are closed.
+        while Self.isInUse {
+            try? await Task.sleep(for: Self.busyRetry)
+            if Task.isCancelled || !settings.current.autoUpdate { return }
         }
+        await install()
+    }
+
+    /// The menu or the Settings window is open. Only the menu bar item's own window is
+    /// always visible, so any other visible window means someone is looking at Pullse.
+    static var isInUse: Bool {
+        NSApp.windows.contains { $0.isVisible && !$0.className.contains("StatusBarWindow") }
     }
 
     /// Look for a newer release. Also backs the "Check now" button.

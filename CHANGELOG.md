@@ -8,6 +8,14 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+### Changed
+- Automatic updates wait while the menu or Settings is open, so Pullse never restarts
+  while you're using it.
+
+### Added
+- "Notify me after Pullse updates" in Settings → Updates, to turn off the "Pullse updated
+  to x.y.z" notification.
+
 ## [0.7.0] - 2026-09-28
 
 ### Added
