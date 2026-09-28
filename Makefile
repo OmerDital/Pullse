@@ -1,7 +1,7 @@
 APP := build/Pullse.app
 INSTALLED := $(HOME)/Applications/Pullse.app
 
-.PHONY: build test run check screenshots dist install uninstall clean
+.PHONY: build test run check screenshots demo dist install uninstall clean
 
 build:
 	scripts/build-app.sh
@@ -19,6 +19,10 @@ check: build
 # Render the README screenshots from made-up sample data.
 screenshots: build
 	"$(APP)/Contents/MacOS/Pullse" --screenshots "$(CURDIR)/docs/screenshots"
+
+# Render the README's animated GIFs from the same sample data.
+demo: build
+	"$(APP)/Contents/MacOS/Pullse" --demo "$(CURDIR)/docs/demo"
 
 # Zip the app with its SHA-256 for download: build/Pullse-<version>.zip(.sha256).
 dist: build

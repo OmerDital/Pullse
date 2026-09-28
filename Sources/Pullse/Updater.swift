@@ -218,6 +218,11 @@ final class Updater {
         available = update
         lastChecked = Date()
     }
+
+    /// Demo GIFs only: show an install at `phase` without doing one.
+    func showPhase(_ phase: Phase) {
+        self.phase = phase
+    }
 }
 
 enum UpdateError: LocalizedError {

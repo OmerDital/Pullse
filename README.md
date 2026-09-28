@@ -24,6 +24,31 @@ grouped by PR. Right-click the icon for About (the GitHub repository), Settings 
   </picture>
 </p>
 
+## See it in action
+
+**Something happens on your PR.** A review or a failed CI run shows up as a native
+notification, the menu bar count goes up, and the menu lists it with an unread dot,
+grouped by pull request. Clicking a notification or a row opens it on GitHub.
+
+<p align="center">
+  <img src="docs/demo/demo-notify.gif" width="760" alt="Two Pullse notifications arrive, a failed CI run and a review requesting changes; the menu bar count goes to 2, and clicking the icon opens the activity list with both marked unread">
+</p>
+
+**Choose what you hear about.** Settings has a tab per area: the organization and how
+often to check, which events notify and which to filter out, updates, and startup.
+
+<p align="center">
+  <img src="docs/demo/demo-settings.gif" width="700" alt="A tour of the Settings tabs: GitHub, Notifications, Updates and App">
+</p>
+
+**Updates install themselves.** When a new release is out, the icon gets an arrow and the
+menu offers it. Install downloads it, checks it, swaps it in and relaunches, and a
+notification confirms the new version. Turn on automatic installs to skip the click.
+
+<p align="center">
+  <img src="docs/demo/demo-update.gif" width="760" alt="The menu bar icon shows an update arrow; the menu offers Pullse 1.4.0, Install is clicked, it downloads and verifies, Pullse relaunches and a notification says Pullse updated to 1.4.0">
+</p>
+
 ## Requirements
 
 - macOS 14+
@@ -90,6 +115,7 @@ make run       # build and launch from ./build without installing
 make check     # one live fetch: print what the last 24h would have notified about
 make test      # unit tests
 make screenshots  # re-render docs/screenshots from sample data (no GitHub, no real settings)
+make demo      # re-render the animated GIFs in docs/demo from the same sample data
 make dist      # build, then zip it as build/Pullse-<version>.zip with a .sha256
 ```
 

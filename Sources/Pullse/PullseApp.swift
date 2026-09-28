@@ -36,6 +36,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Screenshots.render(to: URL(fileURLWithPath: arguments[flag + 1]))
             return
         }
+        if let flag = arguments.firstIndex(of: "--demo"), flag + 1 < arguments.count {
+            Demo.render(to: URL(fileURLWithPath: arguments[flag + 1]))
+            return
+        }
         if arguments.contains("--check") {
             Task { await model.check() }
             return

@@ -33,7 +33,7 @@ enum Screenshots {
     }
 
     /// Drawn as a rounded panel, the way the menu bar shows the menu.
-    private static func popover<V: View>(_ view: V) -> some View {
+    static func popover<V: View>(_ view: V) -> some View {
         view
             .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -47,6 +47,18 @@ enum Screenshots {
     private static func snapshot<V: View>(
         _ view: V, appearance: NSAppearance.Name, to url: URL
     ) async throws {
+        let bitmap = try await image(of: view, appearance: appearance)
+        guard let png = bitmap.representation(using: .png, properties: [:]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        try png.write(to: url)
+        print("wrote \(url.path) (\(bitmap.pixelsWide)×\(bitmap.pixelsHigh))")
+    }
+
+    /// Draws `view` in an off-screen key window at its fitting size.
+    static func image<V: View>(
+        of view: V, appearance: NSAppearance.Name, settle: Duration = .milliseconds(400)
+    ) async throws -> NSBitmapImageRep {
         let host = NSHostingView(rootView: view)
         let window = KeyWindow(
             contentRect: NSRect(x: -20_000, y: -20_000, width: 400, height: 400),
@@ -66,24 +78,23 @@ enum Screenshots {
         defer { window.close() }
 
         // Let SwiftUI lay out, size the window to fit, then let it draw at that size.
-        try await Task.sleep(for: .milliseconds(400))
+        try await Task.sleep(for: settle)
         window.setContentSize(host.fittingSize)
         window.makeFirstResponder(nil)  // no focused text field with its text selected
-        try await Task.sleep(for: .milliseconds(400))
+        try await Task.sleep(for: settle)
 
         guard let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
             throw CocoaError(.fileWriteUnknown)
         }
         host.cacheDisplay(in: host.bounds, to: bitmap)
-        guard let png = bitmap.representation(using: .png, properties: [:]) else {
-            throw CocoaError(.fileWriteUnknown)
-        }
-        try png.write(to: url)
-        print("wrote \(url.path) (\(bitmap.pixelsWide)×\(bitmap.pixelsHigh))")
+        return bitmap
     }
 
-    /// An app model backed by throwaway files holding sample settings and history.
-    private static func sampleModel() throws -> AppModel {
+    /// An app model backed by throwaway files holding sample settings and history, with
+    /// an update to 1.4.0 waiting unless `update` is false.
+    static func sampleModel(
+        events: [PREvent] = sampleEvents(now: Date()), update: Bool = true
+    ) throws -> AppModel {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("pullse-screenshots-\(UUID().uuidString)", isDirectory: true)
 
@@ -95,7 +106,7 @@ enum Screenshots {
 
         let store = StateStore(url: dir.appendingPathComponent("state.json"))
         var state = PersistedState()
-        state.record(sampleEvents(now: Date()))
+        state.record(events)
         try store.save(state)
 
         let model = AppModel(store: store, settings: SettingsModel(
@@ -105,7 +116,7 @@ enum Screenshots {
         let asset = { (id: Int, name: String) in
             ReleaseAsset(id: id, name: name, url: "https://api.github.com/assets/\(id)", size: 0)
         }
-        if let version = SemanticVersion("1.4.0") {
+        if update, let version = SemanticVersion("1.4.0") {
             model.updater.showAvailable(
                 AvailableUpdate(
                     version: version, archive: asset(1, "Pullse-1.4.0.zip"),
@@ -117,7 +128,7 @@ enum Screenshots {
         return model
     }
 
-    private static func sampleEvents(now: Date) -> [PREvent] {
+    static func sampleEvents(now: Date) -> [PREvent] {
         func ago(_ minutes: Double) -> Date { now.addingTimeInterval(-minutes * 60) }
         let api = ("acme/api", 412, "Add rate limiting to the public API")
         let web = ("acme/web", 88, "Dark mode for the dashboard")
@@ -156,6 +167,6 @@ enum Screenshots {
 }
 
 /// Borderless windows can't become key by default.
-private final class KeyWindow: NSWindow {
+final class KeyWindow: NSWindow {
     override var canBecomeKey: Bool { true }
 }
