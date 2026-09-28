@@ -43,6 +43,10 @@ changes.
   it fails to compile here. Views use `private let x = State(initialValue: …)` with
   `.wrappedValue` / `.projectedValue`. Other SwiftUI property-wrapper macros may break the
   same way; `@Observable` (Observation) works.
+- Captures (`make screenshots`, `make demo`) launch the app with `open`, because a
+  process started straight from a terminal stays inactive and AppKit draws its controls
+  inactive (grey switches, plain default buttons). Clicking into another app while one
+  runs has the same effect, so check the images and re-run if they look grey.
 - `swift test` sometimes fails with "plugin for module 'TestingMacros' not found" and
   passes on a re-run. `scripts/test.sh` (used by `make test` and CI) retries only that
   error, so run tests through it.

@@ -16,13 +16,19 @@ run: build
 check: build
 	"$(APP)/Contents/MacOS/Pullse" --check
 
-# Render the README screenshots from made-up sample data.
+# Render the README screenshots from made-up sample data. Launched with `open` so macOS
+# makes the app active: run straight from a terminal it stays in the background, where
+# controls draw inactive (grey switches). open -W waits for it to finish; open can't
+# write to a pipe, so the capture's output goes to a log that is printed afterwards.
+CAPTURE_LOG := $(CURDIR)/build/capture.log
+CAPTURE = rm -f "$(CAPTURE_LOG)"; open -W -n "$(APP)" --stdout "$(CAPTURE_LOG)" --stderr "$(CAPTURE_LOG)" --args
+
 screenshots: build
-	"$(APP)/Contents/MacOS/Pullse" --screenshots "$(CURDIR)/docs/screenshots"
+	$(CAPTURE) --screenshots "$(CURDIR)/docs/screenshots"; cat "$(CAPTURE_LOG)"
 
 # Render the README's animated GIFs from the same sample data.
 demo: build
-	"$(APP)/Contents/MacOS/Pullse" --demo "$(CURDIR)/docs/demo"
+	$(CAPTURE) --demo "$(CURDIR)/docs/demo"; cat "$(CAPTURE_LOG)"
 
 # Zip the app with its SHA-256 for download: build/Pullse-<version>.zip(.sha256).
 dist: build
