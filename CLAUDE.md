@@ -119,7 +119,7 @@ move.
 `release.yml` runs on every push to `main`. If `[Unreleased]` has notes, it runs
 `scripts/release.sh`, which picks the bump from the changelog headings via
 `next-version.sh`, moves the notes, writes `VERSION`, rewrites the README's static
-shields.io version badge (the repo is private, so shields.io can't look releases up), and
+shields.io version badge (static, so it needs no lookup of the releases), and
 makes the "Release x.y.z" commit and tag. The README's other badges and links are
 relative (`../../actions/…`, `../../releases/…`) so they carry no owner or repo name. It then builds, and only after that pushes the commit and tag back to `main`
 (atomically) and publishes the release. With no notes it only uploads the build as an
@@ -129,7 +129,15 @@ Both workflows run on `macos-26`, and actions are pinned by commit SHA. The repo
 allows only GitHub-owned actions and requires SHA pinning, so a new action must be
 GitHub's own and pinned. Releases are immutable once published: assets and tag can't be
 changed, so a bad release is fixed by releasing a new version. The bundle id comes from the
-`BUNDLE_ID` repository variable. The repo is private, so macOS runner minutes are limited.
+`BUNDLE_ID` repository variable. The repo is public.
+
+**main is protected** by the "Protect main" ruleset: a pull request with the `build` check
+passing and one approval, no direct or force pushes, no deletion. The repository admin
+may bypass it only through a pull request, so a solo maintainer merges their own PR with
+"Merge without waiting for requirements" (GitHub never lets an author approve their own
+PR). The only other bypass is deploy keys: the release job pushes its "Release x.y.z"
+commit and tag over SSH with `RELEASE_DEPLOY_KEY`, a secret of the `release` environment,
+which only `main` can deploy to. So work on a branch and open a PR; never push to main.
 
 ## Tests
 
@@ -149,9 +157,10 @@ rules. The fixture clock is fixed: `lastPoll = t0`, `now = t0 + 60s`, and
 - **Only GitHub links are opened.** Everything handed to `NSWorkspace.open` from GitHub
   data goes through `GitHubLink` (https on github.com only). CI links (`detailsUrl`,
   `targetUrl`) are set by third parties, and `NSWorkspace` follows any URL scheme.
-- **The release job's token only reaches steps that run no repository code.** Checkout
-  doesn't persist credentials; the "main moved on" check and Publish get `GH_TOKEN`
-  in their own `env`. Keep it that way when adding steps.
+- **The release job's credentials only reach steps that run no repository code.**
+  Checkout doesn't persist credentials; the "main moved on" check and Publish get
+  `GH_TOKEN`, and only Publish gets the deploy key, each in their own `env`. Keep it that
+  way when adding steps.
 - **Pullse must stay read-only toward GitHub.** GraphQL queries and REST GETs only, never
   mutations or other methods. `everyQueryIsReadOnly` in `ModelAndStoreTests.swift`
   enforces the GraphQL half.
