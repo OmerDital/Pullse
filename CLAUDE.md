@@ -107,6 +107,12 @@ the SHA-256, `ditto -x`, check bundle id, version and `codesign --verify`, then 
 `/bin/sh` swaps the bundle after the app quits and reopens it. Installs happen only from
 `/Applications` or `~/Applications`; elsewhere the button opens the release page.
 `PersistedState.lastRunVersion` drives the one-time "updated to x.y.z" notification.
+A browser download opened in place runs translocated (from a read-only
+`…/AppTranslocation/` mount) and can't replace itself: at launch `AppMover` offers to copy
+it into an Applications folder, clear `com.apple.quarantine`, trash the download (found
+with `SecTranslocateCreateOriginalPathForURL`, looked up at run time) and relaunch. The
+path rules are `AppLocation` in PullseCore, and a build in the repo is never offered the
+move.
 
 **CI and releases.** `.github/workflows/ci.yml` tests and builds pull requests.
 `release.yml` runs on every push to `main`. If `[Unreleased]` has notes, it runs
@@ -118,7 +124,10 @@ relative (`../../actions/…`, `../../releases/…`) so they carry no owner or r
 (atomically) and publishes the release. With no notes it only uploads the build as an
 artifact. Pushes made with `GITHUB_TOKEN` don't trigger workflows, so there is no loop. A
 tag push triggers nothing, so a version cut and tagged locally would never be published.
-Both workflows run on `macos-26`, and actions are pinned by commit SHA. The bundle id comes from the
+Both workflows run on `macos-26`, and actions are pinned by commit SHA. The repository
+allows only GitHub-owned actions and requires SHA pinning, so a new action must be
+GitHub's own and pinned. Releases are immutable once published: assets and tag can't be
+changed, so a bad release is fixed by releasing a new version. The bundle id comes from the
 `BUNDLE_ID` repository variable. The repo is private, so macOS runner minutes are limited.
 
 ## Tests

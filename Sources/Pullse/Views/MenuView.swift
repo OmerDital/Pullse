@@ -191,10 +191,15 @@ private struct UpdateBanner: View {
                 ProgressView().controlSize(.small)
             } else {
                 Button("What's new") { updater.openReleasePage() }
-                Button(updater.canInstallInPlace ? "Install" : "Download") {
-                    Task { await updater.install() }
+                if !updater.canInstallInPlace, AppMover.shouldOffer {
+                    Button("Move to Applications") { AppMover.move() }
+                        .buttonStyle(.borderedProminent)
+                } else {
+                    Button(updater.canInstallInPlace ? "Install" : "Download") {
+                        Task { await updater.install() }
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
             }
         }
         .buttonStyle(.borderless)
@@ -210,8 +215,9 @@ private struct UpdateBanner: View {
         case .installing: return "Verifying and installing…"
         case .idle, .checking:
             if let error = updater.error { return error }
-            return updater.canInstallInPlace
-                ? "You have \(updater.version). Pullse restarts to finish."
+            if updater.canInstallInPlace { return "You have \(updater.version). Pullse restarts to finish." }
+            return AppMover.shouldOffer
+                ? "You have \(updater.version). Pullse can update itself once it's in Applications."
                 : "You have \(updater.version). Move Pullse to Applications to update in place."
         }
     }

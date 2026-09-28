@@ -44,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { await model.check() }
             return
         }
+        if AppMover.offerIfNeeded() { return }
         model.start()
         statusMenu.install()
     }

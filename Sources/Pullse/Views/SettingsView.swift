@@ -228,11 +228,16 @@ struct SettingsView: View {
                     } else {
                         Button("What's new") { updater.openReleasePage() }
                             .buttonStyle(.link)
-                        Button(updater.canInstallInPlace ? "Install" : "Download") {
-                            Task { await updater.install() }
+                        if !updater.canInstallInPlace, AppMover.shouldOffer {
+                            Button("Move to Applications") { AppMover.move() }
+                                .buttonStyle(.borderedProminent)
+                        } else {
+                            Button(updater.canInstallInPlace ? "Install" : "Download") {
+                                Task { await updater.install() }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(updater.isBusy)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(updater.isBusy)
                     }
                 }
             }
@@ -251,7 +256,13 @@ struct SettingsView: View {
         } header: {
             Text("Automatic updates")
         } footer: {
-            if !updater.canInstallInPlace {
+            if AppMover.shouldOffer {
+                HStack(alignment: .firstTextBaseline) {
+                    Footnote("Pullse is running from a download location, where it can't update itself. Move it to Applications once and updates install in place.")
+                    Button("Move to Applications…") { AppMover.move() }
+                        .controlSize(.small)
+                }
+            } else if !updater.canInstallInPlace {
                 Footnote("Updates install in place only when Pullse is in Applications or ~/Applications. From anywhere else they open the download page.")
             }
         }

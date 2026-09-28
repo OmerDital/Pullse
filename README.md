@@ -77,10 +77,16 @@ need read access to it both to download and for the app's update checks, which u
 
 To install:
 
-1. Unzip it and move `Pullse.app` to `~/Applications` (or `/Applications`).
+1. Unzip it and move `Pullse.app` to `~/Applications` (or `/Applications`) in Finder.
 2. Open it. Releases are ad-hoc signed rather than notarized, so the first time macOS
    says it can't check the app. Go to System Settings → Privacy & Security, click
    **Open Anyway** next to the message about Pullse, and confirm.
+
+If you open it straight from Downloads, or it was moved some other way than with Finder,
+macOS runs it from a temporary read-only copy where it can't update itself. Pullse
+notices and offers to **Move to Applications**: it copies itself there, clears the
+download flag and restarts. The same button shows in the update banner and in Settings →
+Updates until it has moved.
 
 That approval is needed only once. Updates Pullse installs itself are downloaded by the
 app, not by a browser, so they don't prompt again.

@@ -8,6 +8,11 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+### Added
+- A downloaded copy that macOS runs from a temporary location (or from Downloads) offers
+  to move itself to Applications, so it can update itself from then on. The update banner
+  and Settings → Updates offer the same move instead of a Download button.
+
 ## [0.6.0] - 2026-09-24
 
 ### Added
