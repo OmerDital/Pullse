@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-28
+
 ### Changed
 - Automatic updates wait while the menu or Settings is open, so Pullse never restarts
   while you're using it.

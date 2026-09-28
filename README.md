@@ -1,7 +1,7 @@
 # Pullse
 
 [![Build](../../actions/workflows/release.yml/badge.svg?branch=main)](../../actions/workflows/release.yml)
-[![Latest release](https://img.shields.io/badge/release-v0.7.0-blue)](../../releases/latest)
+[![Latest release](https://img.shields.io/badge/release-v0.8.0-blue)](../../releases/latest)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 A macOS menu bar app that sends a native notification when something happens on your
