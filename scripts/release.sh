@@ -2,9 +2,10 @@
 # Prepare a release commit: scripts/release.sh [x.y.z]
 #
 # Moves CHANGELOG.md's [Unreleased] notes into a dated [x.y.z] section, writes VERSION,
-# commits "Release x.y.z" and tags vx.y.z. Without a version it uses the one
-# scripts/next-version.sh derives from the notes. Nothing is pushed: the Release workflow
-# runs this on every push to main, then pushes the commit and tag and publishes them.
+# updates the README's version badge, commits "Release x.y.z" and tags vx.y.z. Without
+# a version it uses the one scripts/next-version.sh derives from the notes. Nothing is
+# pushed: the Release workflow runs this on every push to main, then pushes the commit
+# and tag and publishes them.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -53,7 +54,13 @@ awk -v version="$NEW" -v today="$TODAY" '
 mv CHANGELOG.md.tmp CHANGELOG.md
 echo "$NEW" > VERSION
 
-git add CHANGELOG.md VERSION
+# The README's version badge is a static shields.io badge (a private repository's
+# releases can't be read by shields.io). In its text, "-" is written "--".
+BADGE="$(printf '%s' "$NEW" | sed 's/-/--/g')"
+sed -E "s|(img\.shields\.io/badge/release-v)[^)]*(-blue\))|\1$BADGE\2|" README.md > README.md.tmp
+mv README.md.tmp README.md
+
+git add CHANGELOG.md VERSION README.md
 git commit -q -m "Release $NEW"
 git tag -a "v$NEW" -m "Pullse $NEW"
 

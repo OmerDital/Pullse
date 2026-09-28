@@ -1,5 +1,9 @@
 # Pullse
 
+[![Build](../../actions/workflows/release.yml/badge.svg?branch=main)](../../actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/badge/release-v0.6.0-blue)](../../releases/latest)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+
 A macOS menu bar app that sends a native notification when something happens on your
 GitHub pull requests in an organization you choose:
 
@@ -241,6 +245,7 @@ Sources/PullseCore/   GitHub client, GraphQL queries, models, EventDetector (pur
 Sources/Pullse/       SwiftUI menu bar app, notifications, settings
 Tests/PullseTests/    detector, decoding, settings and update tests
 Support/Info.plist    bundle metadata (LSUIElement: no Dock icon; version stamped at build)
+LICENSE, NOTICE       Apache 2.0 license and copyright notice
 scripts/              build-app.sh, package.sh, release.sh, next-version.sh, changelog-section.sh, test.sh
 .github/workflows/    ci.yml (pull requests), release.yml (pushes to main)
 ```
@@ -248,3 +253,8 @@ scripts/              build-app.sh, package.sh, release.sh, next-version.sh, cha
 Views use `State(initialValue:)` instead of `@State`. In the macOS 27 SDK, `@State` is a
 macro, and its compiler plugin ships only with Xcode, so `@State` would break builds that
 use just the Command Line Tools.
+
+## License
+
+Pullse is licensed under the [Apache License, Version 2.0](LICENSE). Copyright 2026
+Pullse contributors; see [NOTICE](NOTICE).

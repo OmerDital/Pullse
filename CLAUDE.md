@@ -106,8 +106,10 @@ the SHA-256, `ditto -x`, check bundle id, version and `codesign --verify`, then 
 **CI and releases.** `.github/workflows/ci.yml` tests and builds pull requests.
 `release.yml` runs on every push to `main`. If `[Unreleased]` has notes, it runs
 `scripts/release.sh`, which picks the bump from the changelog headings via
-`next-version.sh`, moves the notes, writes `VERSION`, and makes the "Release x.y.z" commit
-and tag. It then builds, and only after that pushes the commit and tag back to `main`
+`next-version.sh`, moves the notes, writes `VERSION`, rewrites the README's static
+shields.io version badge (the repo is private, so shields.io can't look releases up), and
+makes the "Release x.y.z" commit and tag. The README's other badges and links are
+relative (`../../actions/…`, `../../releases/…`) so they carry no owner or repo name. It then builds, and only after that pushes the commit and tag back to `main`
 (atomically) and publishes the release. With no notes it only uploads the build as an
 artifact. Pushes made with `GITHUB_TOKEN` don't trigger workflows, so there is no loop. A
 tag push triggers nothing, so a version cut and tagged locally would never be published.
@@ -128,6 +130,7 @@ rules. The fixture clock is fixed: `lastPoll = t0`, `now = t0 + 60s`, and
   teammates' logins, real repo names and bundle ids. Use placeholders such as `acme`,
   `your-org`, `alice` and `janedoe` in tests, comments, UI prompts and docs; real values
   belong in the settings file.
+- Licensed under Apache 2.0 (`LICENSE`, `NOTICE`), copyright "Pullse contributors".
 - **Pullse must stay read-only toward GitHub.** GraphQL queries and REST GETs only, never
   mutations or other methods. `everyQueryIsReadOnly` in `ModelAndStoreTests.swift`
   enforces the GraphQL half.
