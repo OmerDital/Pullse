@@ -17,13 +17,6 @@ dependabot, …) are muted by default. Clicking a notification opens the comment
 check. The menu bar icon shows an unread count, and its popover lists recent activity
 grouped by PR. Right-click the icon for About (the GitHub repository), Settings and Quit.
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
-    <img src="docs/screenshots/menu-light.png" width="440" alt="The Pullse menu open under its menu bar icon: recent activity grouped by pull request, with unread items marked">
-  </picture>
-</p>
-
 ## See it in action
 
 **Something happens on your PR.** A review or a failed CI run shows up as a native
@@ -122,7 +115,6 @@ make install   # build, copy to ~/Applications, launch
 make run       # build and launch from ./build without installing
 make check     # one live fetch: print what the last 24h would have notified about
 make test      # unit tests
-make screenshots  # re-render docs/screenshots from sample data (no GitHub, no real settings)
 make demo      # re-render the animated GIFs in docs/demo from the same sample data
 make dist      # build, then zip it as build/Pullse-<version>.zip with a .sha256
 ```
@@ -145,36 +137,7 @@ The Settings window has a tab for each area, listed down the left side:
 
 A dot on a tab means it needs a look: notifications are off, or an update is waiting.
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-notifications-dark.png">
-    <img src="docs/screenshots/settings-notifications-light.png" width="700" alt="The Notifications tab of Pullse Settings: event toggles, CI results mode, filters and a test notification button">
-  </picture>
-</p>
-
-<details>
-<summary>The other tabs</summary>
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-github-dark.png">
-    <img src="docs/screenshots/settings-github-light.png" width="700" alt="The GitHub tab: organization and check interval">
-  </picture>
-</p>
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-updates-dark.png">
-    <img src="docs/screenshots/settings-updates-light.png" width="700" alt="The Updates tab: version, Check now, and automatic update toggles">
-  </picture>
-</p>
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-app-dark.png">
-    <img src="docs/screenshots/settings-app-light.png" width="700" alt="The App tab: launch at login and the settings file location">
-  </picture>
-</p>
-
-</details>
+The Settings tour in [See it in action](#see-it-in-action) shows each tab.
 
 Everything specific to you lives in `~/.config/pullse/settings.json`, outside this
 repository. The app creates the file with defaults on first launch. The Settings window

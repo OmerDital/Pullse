@@ -14,7 +14,6 @@ make run       # build and open build/Pullse.app
 make install   # build, copy to ~/Applications, relaunch
 make check     # build, then one live read-only fetch: prints what the last 24h would notify
 make test      # swift test
-make screenshots  # render docs/screenshots/*.png (menu + each Settings tab, light/dark) from sample data
 make demo      # render docs/demo/*.gif (notifications, Settings tour, update) from sample data
 make dist      # build + zip: build/Pullse-<version>.zip and .sha256 (scripts/package.sh)
 scripts/next-version.sh     # the version the [Unreleased] notes would release as, or exit 1
@@ -27,16 +26,13 @@ There is no linter configured.
 `.build/debug/Pullse` runs, but notifications and launch-at-login only work from the
 bundled `.app`, so the app has to go through `make build`. `Pullse --check` (the `--check`
 flag on the binary) runs one fetch, prints, and exits without notifying or touching saved
-state. `Pullse --screenshots <dir>` (`Screenshots.swift`) draws the real views into
-off-screen windows, using sample data and temporary files, so it needs no Screen Recording
-permission. Re-run it after UI changes; the sample data follows the placeholder-names
-rule below. The stills use the GIFs' scenery from `Demo.swift` (the menu open on a
-narrow desktop, Settings on the wallpaper). It renders one picture per `SettingsTab` (`settings-<tab>-<light|dark>.png`),
-so a new tab gets a screenshot automatically, but the README links each one by name. `Pullse --demo <dir>` (`Demo.swift`) renders the README's GIFs the same way: each
-frame is the real views inside a made-up desktop (menu bar, notification banners, a
-pointer), and ImageIO writes the GIF. The pointer and menu positions are fixed
-coordinates in `Demo.swift`, so re-check the GIFs when the menu or Settings layout
-changes.
+state. `Pullse --demo <dir>` (`Demo.swift`) renders the README's GIFs: each frame is the
+real views, drawn by `Capture.swift` into off-screen windows with sample data and
+temporary files (so no Screen Recording permission), inside a made-up desktop (menu bar,
+notification banners, a pointer), and ImageIO writes the GIF. Re-run it after UI
+changes; the sample data follows the placeholder-names rule below. The pointer and menu
+positions are fixed coordinates in `Demo.swift`, so re-check the GIFs when the menu or
+Settings layout changes.
 
 ## Toolchain quirks (Command Line Tools only, macOS 27 SDK)
 
@@ -44,9 +40,9 @@ changes.
   it fails to compile here. Views use `private let x = State(initialValue: …)` with
   `.wrappedValue` / `.projectedValue`. Other SwiftUI property-wrapper macros may break the
   same way; `@Observable` (Observation) works.
-- Captures (`make screenshots`, `make demo`) launch the app with `open`, because a
+- `make demo` launches the app with `open`, because a
   process started straight from a terminal stays inactive and AppKit draws its controls
-  inactive (grey switches, plain default buttons). Clicking into another app while one
+  inactive (grey switches, plain default buttons). Clicking into another app while it
   runs has the same effect, so check the images and re-run if they look grey.
 - `swift test` sometimes fails with "plugin for module 'TestingMacros' not found" and
   passes on a re-run. `scripts/test.sh` (used by `make test` and CI) retries only that

@@ -18,7 +18,7 @@ final class SettingsModel {
     @ObservationIgnored let displayPath: String
     @ObservationIgnored private var loadedModificationDate: Date?
 
-    /// `displayPath` defaults to the file's real path; screenshots pass the usual one so
+    /// `displayPath` defaults to the file's real path; captures pass the usual one so
     /// a temporary path never shows up in them.
     init(file: SettingsFile = SettingsFile(), displayPath: String? = nil) {
         self.file = file

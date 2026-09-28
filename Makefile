@@ -1,7 +1,7 @@
 APP := build/Pullse.app
 INSTALLED := $(HOME)/Applications/Pullse.app
 
-.PHONY: build test run check screenshots demo dist install uninstall clean
+.PHONY: build test run check demo dist install uninstall clean
 
 build:
 	scripts/build-app.sh
@@ -16,17 +16,13 @@ run: build
 check: build
 	"$(APP)/Contents/MacOS/Pullse" --check
 
-# Render the README screenshots from made-up sample data. Launched with `open` so macOS
-# makes the app active: run straight from a terminal it stays in the background, where
-# controls draw inactive (grey switches). open -W waits for it to finish; open can't
-# write to a pipe, so the capture's output goes to a log that is printed afterwards.
+# Render the README's animated GIFs from made-up sample data. Launched with `open` so
+# macOS makes the app active: run straight from a terminal it stays in the background,
+# where controls draw inactive (grey switches). open -W waits for it to finish; open
+# can't write to a pipe, so the capture's output goes to a log that is printed afterwards.
 CAPTURE_LOG := $(CURDIR)/build/capture.log
 CAPTURE = rm -f "$(CAPTURE_LOG)"; open -W -n "$(APP)" --stdout "$(CAPTURE_LOG)" --stderr "$(CAPTURE_LOG)" --args
 
-screenshots: build
-	$(CAPTURE) --screenshots "$(CURDIR)/docs/screenshots"; cat "$(CAPTURE_LOG)"
-
-# Render the README's animated GIFs from the same sample data.
 demo: build
 	$(CAPTURE) --demo "$(CURDIR)/docs/demo"; cat "$(CAPTURE_LOG)"
 

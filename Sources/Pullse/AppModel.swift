@@ -41,7 +41,7 @@ final class AppModel {
         history = state.history
     }
 
-    /// Screenshots only: show a finished poll without talking to GitHub.
+    /// Demo GIFs only: show a finished poll without talking to GitHub.
     func showAsPolled(openPullRequests: Int, at date: Date) {
         self.openPullRequests = openPullRequests
         lastPoll = date

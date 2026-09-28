@@ -32,10 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let arguments = CommandLine.arguments
-        if let flag = arguments.firstIndex(of: "--screenshots"), flag + 1 < arguments.count {
-            Screenshots.render(to: URL(fileURLWithPath: arguments[flag + 1]))
-            return
-        }
         if let flag = arguments.firstIndex(of: "--demo"), flag + 1 < arguments.count {
             Demo.render(to: URL(fileURLWithPath: arguments[flag + 1]))
             return

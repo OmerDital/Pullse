@@ -2,41 +2,12 @@ import AppKit
 import PullseCore
 import SwiftUI
 
-/// `Pullse --screenshots <dir>`: renders the menu (open on a desktop) and each Settings
-/// tab (on the wallpaper), in light and dark, to PNGs for the README. The data is made up and the app never talks to GitHub
-/// or touches the real settings and state files in this mode.
-///
-/// Views are drawn from an off-screen window of this process, so no Screen Recording
-/// permission is needed.
+/// Drawing Pullse's real views off-screen, with made-up data, for the README's GIFs
+/// (`Demo.swift`). The app never talks to GitHub or touches the real settings and state
+/// files here, and since it draws from an off-screen window of this process, no Screen
+/// Recording permission is needed.
 @MainActor
-enum Screenshots {
-    static func render(to directory: URL) {
-        Task {
-            do {
-                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-                for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-                    // Same scenery as the README's GIFs (Demo.swift): the menu open under its
-                    // icon on a desktop, and each Settings tab on the wallpaper. A fresh model
-                    // per picture: closing the menu marks everything read.
-                    try await snapshot(DemoDesktop(model: try sampleModel(), menu: true, width: 440), appearance: appearance,
-                                       to: directory.appendingPathComponent("menu-\(suffix).png"))
-                    for tab in SettingsTab.allCases {
-                        let window = popover(SettingsView(model: try sampleModel(), tab: tab))
-                            .fixedSize()
-                            .padding(28)
-                            .background(DemoWallpaper())
-                        try await snapshot(window, appearance: appearance,
-                                           to: directory.appendingPathComponent("settings-\(tab.rawValue)-\(suffix).png"))
-                    }
-                }
-                exit(0)
-            } catch {
-                print("error: \(error.localizedDescription)")
-                exit(1)
-            }
-        }
-    }
-
+enum Capture {
     /// Drawn as a rounded panel, the way the menu bar shows the menu.
     static func popover<V: View>(_ view: V) -> some View {
         view
@@ -47,17 +18,6 @@ enum Screenshots {
                     .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
             )
             .padding(1)
-    }
-
-    private static func snapshot<V: View>(
-        _ view: V, appearance: NSAppearance.Name, to url: URL
-    ) async throws {
-        let bitmap = try await image(of: view, appearance: appearance)
-        guard let png = bitmap.representation(using: .png, properties: [:]) else {
-            throw CocoaError(.fileWriteUnknown)
-        }
-        try png.write(to: url)
-        print("wrote \(url.path) (\(bitmap.pixelsWide)×\(bitmap.pixelsHigh))")
     }
 
     /// Draws `view` in an off-screen key window at its fitting size.
@@ -101,7 +61,7 @@ enum Screenshots {
         events: [PREvent] = sampleEvents(now: Date()), update: Bool = true
     ) throws -> AppModel {
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pullse-screenshots-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("pullse-capture-\(UUID().uuidString)", isDirectory: true)
 
         var settings = PullseSettings()
         settings.org = "acme"

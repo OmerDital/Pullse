@@ -5,9 +5,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// `Pullse --demo <dir>`: renders the README's animated GIFs. Each frame is Pullse's real
-/// views, drawn off-screen like `Screenshots`, inside a small made-up desktop: wallpaper,
+/// views, drawn off-screen by `Capture`, inside a small made-up desktop: wallpaper,
 /// a menu bar holding the real menu bar label, macOS-style notification banners and a
-/// pointer. The data is the screenshots' sample data; nothing talks to GitHub.
+/// pointer. The data is `Capture`'s sample data; nothing talks to GitHub.
 ///
 /// GIFs are written with ImageIO, so no tools beyond macOS are needed.
 @MainActor
@@ -42,7 +42,7 @@ enum Demo {
     /// Two notifications arrive, the count climbs, and a click opens the activity list.
     private static func notifyFrames() throws -> [Frame] {
         // Shifted so the newest sample event reads "now".
-        let events = Screenshots.sampleEvents(now: Date().addingTimeInterval(120))
+        let events = Capture.sampleEvents(now: Date().addingTimeInterval(120))
         func event(_ id: String) -> PREvent { events.first { $0.id == id }! }
         let older = events.filter { ["4", "5", "6"].contains($0.id) }
         let ci = event("3"), review = event("1")
@@ -50,7 +50,7 @@ enum Demo {
         func desktop(_ history: [PREvent], banner: PREvent? = nil, shown: CGFloat = 1,
                      cursor: CGPoint? = nil, click: Bool = false, menu: Bool = false) throws -> AnyView {
             AnyView(DemoDesktop(
-                model: try Screenshots.sampleModel(events: history, update: false),
+                model: try Capture.sampleModel(events: history, update: false),
                 menu: menu, banner: banner.map(DemoBanner.init(event:)), bannerShown: shown,
                 cursor: cursor, click: click
             ))
@@ -77,9 +77,9 @@ enum Demo {
     /// A tour of the Settings tabs, clicked one after another in the sidebar.
     private static func settingsFrames() throws -> [Frame] {
         func window(_ tab: SettingsTab, cursor: CGPoint, click: Bool = false) throws -> AnyView {
-            let model = try Screenshots.sampleModel()
+            let model = try Capture.sampleModel()
             return AnyView(DemoCanvas(size: CGSize(width: 700, height: 600), cursor: cursor, click: click) {
-                Screenshots.popover(SettingsView(model: model, tab: tab))
+                Capture.popover(SettingsView(model: model, tab: tab))
                     .fixedSize()
                     .offset(x: 20, y: 20)
             })
@@ -104,7 +104,7 @@ enum Demo {
 
     /// An update is found, installed from the menu, and Pullse comes back on the new version.
     private static func updateFrames() throws -> [Frame] {
-        let events = Screenshots.sampleEvents(now: Date()).map { event -> PREvent in
+        let events = Capture.sampleEvents(now: Date()).map { event -> PREvent in
             var event = event
             event.isUnread = false
             return event
@@ -112,7 +112,7 @@ enum Demo {
         func desktop(update: Bool = true, phase: Updater.Phase = .idle, icon: Bool = true,
                      banner: DemoBanner? = nil, shown: CGFloat = 1,
                      cursor: CGPoint? = nil, click: Bool = false, menu: Bool = false) throws -> AnyView {
-            let model = try Screenshots.sampleModel(events: events, update: update)
+            let model = try Capture.sampleModel(events: events, update: update)
             model.updater.showPhase(phase)
             return AnyView(DemoDesktop(
                 model: model, iconVisible: icon, menu: menu, banner: banner, bannerShown: shown,
@@ -163,7 +163,7 @@ enum Demo {
         CGImageDestinationSetProperties(destination, loopForever as CFDictionary)
 
         for frame in frames {
-            let bitmap = try await Screenshots.image(of: frame.view, appearance: .aqua, settle: .milliseconds(250))
+            let bitmap = try await Capture.image(of: frame.view, appearance: .aqua, settle: .milliseconds(250))
             guard let captured = bitmap.cgImage,
                   let image = resized(captured, width: Int(bitmap.size.width * outputScale))
             else { throw CocoaError(.fileWriteUnknown) }
@@ -268,7 +268,7 @@ struct DemoDesktop: View {
         DemoCanvas(size: CGSize(width: width, height: Self.size.height), cursor: cursor, click: click) {
             menuBar
             if menu {
-                Screenshots.popover(MenuView(model: model))
+                Capture.popover(MenuView(model: model))
                     .fixedSize()
                     .offset(x: Self.menuOrigin.x + shift, y: Self.menuOrigin.y)
             }

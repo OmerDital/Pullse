@@ -222,7 +222,7 @@ final class Updater {
         }
     }
 
-    /// Screenshots only: pretend to be `version` in Applications, with a check that
+    /// Demo GIFs only: pretend to be `version` in Applications, with a check that
     /// found `update`.
     func showAvailable(_ update: AvailableUpdate, runningVersion version: String, build: String) {
         self.version = version
