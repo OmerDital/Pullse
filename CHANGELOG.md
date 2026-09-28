@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-28
+
 ### Security
 - Clicking a notification or activity item only opens GitHub pages over https. A CI
   link set by the reporting integration to anything else (another site, `file://`,
