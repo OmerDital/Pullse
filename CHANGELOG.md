@@ -2,7 +2,7 @@
 
 All notable changes to Pullse are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
-[Semantic Versioning](https://semver.org/). Every push to main with notes under
+[Semantic Versioning](https://semver.org/). Every merge to main with notes under
 Unreleased is released, and the headings decide the bump: Fixed or Security is a patch,
 Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 

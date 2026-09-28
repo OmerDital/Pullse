@@ -34,6 +34,10 @@ jobs:
   release:
     runs-on: macos-26
     timeout-minutes: 20
+    # Holds RELEASE_DEPLOY_KEY and is limited to main. main's ruleset requires a pull
+    # request for every change; that deploy key is the one bypass, so the release commit
+    # can be pushed back.
+    environment: release
     steps:
       # The token is kept out of .git/config, so the steps that run the repository's own
       # code (tests, scripts, the build) can't push or publish with it. Only the steps
@@ -115,10 +119,17 @@ jobs:
         if: steps.cut.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          DEPLOY_KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
         run: |
-          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64)"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
-            push --atomic origin HEAD:main "v$VERSION"
+          # The release commit and tag go over SSH with the deploy key, which main's
+          # ruleset lets bypass the pull request rule. GitHub's host keys come from its
+          # API over HTTPS rather than from trusting the first connection.
+          key="$RUNNER_TEMP/deploy_key"; hosts="$RUNNER_TEMP/known_hosts"
+          ( umask 077; printf '%s\n' "$DEPLOY_KEY" > "$key" )
+          gh api meta --jq '.ssh_keys[]' | sed 's/^/github.com /' > "$hosts"
+          GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$hosts -o StrictHostKeyChecking=yes" \
+            git push --atomic "git@github.com:$GITHUB_REPOSITORY.git" HEAD:main "v$VERSION"
+          rm -f "$key"
           flags=()
           case "$VERSION" in *-*) flags+=(--prerelease) ;; esac
           gh release create "v$VERSION" \

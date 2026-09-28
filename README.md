@@ -203,8 +203,11 @@ The version lives in `VERSION` (SemVer), and `CHANGELOG.md` records every change
 `## [Unreleased]` until it ships. The build number is CI's run number, or the commit count
 for local builds.
 
-Releases are automatic. Every push to `main` runs `.github/workflows/release.yml`, which
-tests and builds the app, and releases it if there are notes under `[Unreleased]`. The
+Changes reach `main` only through pull requests: `main` is protected by a ruleset that
+requires a PR with a passing `build` check and one approval from a maintainer, and blocks
+direct and force pushes. Releases are automatic. Every merge to `main` runs
+`.github/workflows/release.yml`, which tests and builds the app, and releases it if there
+are notes under `[Unreleased]`. The
 notes decide the version (`scripts/next-version.sh`):
 
 | Under `[Unreleased]` | Bump | Example |
@@ -215,10 +218,11 @@ notes decide the version (`scripts/next-version.sh`):
 | `### Breaking` | major (minor while below 1.0) | 1.4.2 → 2.0.0 |
 
 The workflow moves the notes into a dated `[x.y.z]` section, writes `VERSION`, and pushes a
-"Release x.y.z" commit and a `vx.y.z` tag back to `main`. It then publishes a GitHub
-release with the zip, its checksum, and those notes. **Pull after each release** before
-pushing again, because `main` has the release commit on top of yours. If two pushes land
-close together, the later run releases both.
+"Release x.y.z" commit and a `vx.y.z` tag back to `main`. That push is the one exception to
+the pull request rule: it uses a deploy key kept in the `release` environment, which only
+`main` can use. It then publishes a GitHub release with the zip, its checksum, and those
+notes. Update your branch from `main` after a release, because the release commit sits on
+top of the merge. If two merges land close together, the later run releases both.
 
 To pick a version yourself, such as 1.0.0 or a prerelease like `1.1.0-beta.1`, run the
 workflow by hand: Actions → Release → Run workflow, with the version filled in. Prereleases
@@ -245,7 +249,7 @@ Tests/PullseTests/    detector, decoding, settings and update tests
 Support/Info.plist    bundle metadata (LSUIElement: no Dock icon; version stamped at build)
 LICENSE, NOTICE       Apache 2.0 license and copyright notice
 scripts/              build-app.sh, package.sh, release.sh, next-version.sh, changelog-section.sh, test.sh
-.github/workflows/    ci.yml (pull requests), release.yml (pushes to main)
+.github/workflows/    ci.yml (pull requests), release.yml (merges to main)
 ```
 
 Views use `State(initialValue:)` instead of `@State`. In the macOS 27 SDK, `@State` is a
