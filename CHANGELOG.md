@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-01
+
 ### Added
 - "Show open pull requests in the menu" in Settings → Notifications lists every open pull
   request you authored, with its CI and review status, even when there's no new activity
