@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-02
+
 ### Fixed
 - Open pull requests in muted repositories are no longer listed in the menu, and the open
   pull request count leaves them out.
