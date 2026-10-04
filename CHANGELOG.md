@@ -8,6 +8,8 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-04
+
 ### Added
 - A keyboard shortcut to open and close the menu from any app. Record one in Settings →
   App → Keyboard; there's none until you do.
