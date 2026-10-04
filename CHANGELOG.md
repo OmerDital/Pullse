@@ -9,8 +9,9 @@ Added, Changed, Deprecated or Removed is a minor, and Breaking is a major.
 ## [Unreleased]
 
 ### Fixed
-- "Send test notification" in Settings now shows that it worked, or that macOS isn't
-  showing Pullse's notifications, next to the button.
+- "Send test notification" in Settings now briefly turns into a green "Sent" (or an orange
+  "Added to the menu only" when macOS isn't showing Pullse's notifications), instead of
+  giving no sign that it worked.
 
 ## [0.10.0] - 2026-10-04
 
